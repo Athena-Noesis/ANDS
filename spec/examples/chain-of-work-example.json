@@ -1,0 +1,32 @@
+{
+  "chain_id": "chain-001",
+  "created_at": "2026-01-13T00:00:00Z",
+  "nodes": [
+    {
+      "node_id": "n1",
+      "step_type": "INTENT_ACCEPTED",
+      "timestamp": "2026-01-13T00:00:01Z",
+      "snapshot_id": "snap-abc",
+      "inputs_hash": "sha256:...",
+      "outputs_hash": "sha256:..."
+    },
+    {
+      "node_id": "n2",
+      "step_type": "ORACLE_INVOCATION",
+      "timestamp": "2026-01-13T00:00:05Z",
+      "snapshot_id": "snap-abc",
+      "source_system": {
+        "system_id": "vendor.llm",
+        "ands_code": "3.1.1.2.4",
+        "certification_level": "SELF"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "relation": "LEADS_TO"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "refusal_id": "ref-001",
+  "status": "REFUSED",
+  "reason_code": "INSUFFICIENT_EVIDENCE",
+  "explanation": "The request requires governed reasoning with evidence not currently available.",
+  "what_would_help": [
+    "Provide the relevant policy document.",
+    "Provide access to the system logs for the time window."
+  ],
+  "human_action_required": true,
+  "timestamp": "2026-01-13T00:00:10Z"
+}

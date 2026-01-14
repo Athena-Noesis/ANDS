@@ -1,0 +1,23 @@
+{
+  "system_id": "athena-noesis.reference",
+  "ands_version": "1.0",
+  "declared_ands": "3.1.3.4.3",
+  "certification_level": "SELF",
+  "scope": [
+    "governed_reasoning",
+    "code_review"
+  ],
+  "capabilities": {
+    "tool_use": false,
+    "memory_persistence": true,
+    "autonomous_execution": false,
+    "state_mutation": false,
+    "code_execution": false
+  },
+  "contact": "standards@example.org",
+  "signed": {
+    "sig": "",
+    "alg": "ed25519",
+    "pubkey": ""
+  }
+}

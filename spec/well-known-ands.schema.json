@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/well-known-ands.schema.json",
+  "title": "ANDS Well-Known Declaration",
+  "type": "object",
+  "required": [
+    "system_id",
+    "ands_version",
+    "declared_ands",
+    "certification_level"
+  ],
+  "properties": {
+    "system_id": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Stable identifier for the AI system, e.g., vendor.product"
+    },
+    "ands_version": {
+      "type": "string",
+      "description": "ANDS standard version, e.g., 1.0"
+    },
+    "declared_ands": {
+      "$ref": "./ands.schema.json"
+    },
+    "certification_level": {
+      "type": "string",
+      "enum": [
+        "SELF",
+        "VERIFIED",
+        "AUDITED"
+      ]
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Declared use-cases/supported domains"
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool_use": {
+          "type": "boolean"
+        },
+        "memory_persistence": {
+          "type": "boolean"
+        },
+        "autonomous_execution": {
+          "type": "boolean"
+        },
+        "state_mutation": {
+          "type": "boolean"
+        },
+        "code_execution": {
+          "type": "boolean"
+        }
+      }
+    },
+    "contact": {
+      "type": "string"
+    },
+    "signed": {
+      "type": "object",
+      "description": "Optional signature block (recommended for VERIFIED/AUDITED)",
+      "properties": {
+        "sig": {
+          "type": "string"
+        },
+        "alg": {
+          "type": "string"
+        },
+        "pubkey": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
