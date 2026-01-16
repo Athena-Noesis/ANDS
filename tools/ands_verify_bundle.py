@@ -56,27 +56,41 @@ def verify_bundle(path: str) -> bool:
                     else:
                         print(f"✅ VERIFIED: {zname}")
 
-            # 3. Verify Auditor Signature (Optional)
-            if "signature.json" in zf.namelist():
-                with zf.open("signature.json") as f:
-                    sig_data = json.loads(f.read().decode('utf-8'))
+            # 3. Verify Auditor Signature(s) (Optional)
+            found_sigs = 0
+            valid_sigs = 0
 
-                try:
-                    pub_bytes = base64.b64decode(sig_data["pubkey"])
-                    sig_bytes = base64.b64decode(sig_data["sig"])
+            sig_files = ["signature.json", "signatures.json"]
+            all_sigs = []
 
-                    # Manifest bytes are needed exactly as they were signed
-                    with zf.open("manifest.json") as f:
-                        manifest_bytes = f.read()
+            for sf in sig_files:
+                if sf in zf.namelist():
+                    with zf.open(sf) as f:
+                        data = json.loads(f.read().decode('utf-8'))
+                        if isinstance(data, list): all_sigs.extend(data)
+                        else: all_sigs.append(data)
 
-                    pk = Ed25519PublicKey.from_public_bytes(pub_bytes)
-                    pk.verify(sig_bytes, manifest_bytes)
-                    print(f"✅ AUDITOR SIGNATURE VERIFIED: {sig_data['pubkey'][:16]}...")
-                except Exception as e:
-                    print(f"❌ FAILED: Auditor signature invalid: {e}")
-                    return False
+            if all_sigs:
+                # Manifest bytes are needed exactly as they were signed
+                with zf.open("manifest.json") as f:
+                    manifest_bytes = f.read()
+
+                for sig_data in all_sigs:
+                    found_sigs += 1
+                    try:
+                        pub_bytes = base64.b64decode(sig_data["pubkey"])
+                        sig_bytes = base64.b64decode(sig_data["sig"])
+                        pk = Ed25519PublicKey.from_public_bytes(pub_bytes)
+                        pk.verify(sig_bytes, manifest_bytes)
+                        print(f"✅ AUDITOR SIGNATURE VERIFIED: {sig_data['pubkey'][:16]}...")
+                        valid_sigs += 1
+                    except Exception as e:
+                        print(f"❌ FAILED: Auditor signature invalid: {e}")
+
+                print(f"[*] Council Status: {valid_sigs}/{found_sigs} valid signatures.")
+                if valid_sigs == 0: return False
             else:
-                print("[!] Warning: Bundle is not signed by an auditor.")
+                print("[!] Warning: Bundle is not signed by any auditor.")
 
             # 4. Basic Scan Report Check
             with zf.open("report.json") as f:

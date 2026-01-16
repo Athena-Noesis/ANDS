@@ -28,3 +28,4 @@ class ScanReport:
     gaps: List[str]
     recommendations: List[str]
     probes: List[ProbeResult]
+    regulations: Dict[str, str] = None

@@ -1,5 +1,5 @@
 {
-  "system_id": "my-system",
+  "system_id": "sys",
   "ands_version": "1.0",
   "declared_ands": "3.2.1.1.4",
   "certification_level": "SELF",
@@ -11,12 +11,12 @@
     "code_execution": false
   },
   "attestation_urls": [
-    "https://example.com/attest"
+    "http://ex.com"
   ],
-  "contact": "contact@example.com",
+  "contact": "con",
   "signed": {
     "alg": "ed25519",
-    "sig": "+hMRDgLvXU1wpmzMKQZfCKWPOYKQUsZfdYP22sEpiBDmsGmdid+JPVeyo1FBEPClvApg83SiPkVXRvpRXu9OCQ==",
-    "pubkey": "kEArsCV4YS4D0ZCFPBTczziY/pT2RPPgK/nwBqVVEaI="
+    "sig": "1C/2FHAomMhDxGmSdZdlYJRONtao7linddj+uoe3bYsNYUPsQaSaLjlquqrGrZaTKd6K5zjEuUXFEJIqyaJXCg==",
+    "pubkey": "gMhDvl5v8LoYqMNNEj6QLz7WnPIzVZs+6avip5wJdrk="
   }
 }

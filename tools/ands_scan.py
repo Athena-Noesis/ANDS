@@ -15,7 +15,7 @@ from ands import (
     ScanReport, Evidence, ProbeResult,
     normalize_base_url, get_session, safe_request, check_tls_integrity,
     openapi_hints, pick_probe_paths, analyze_probe_status, infer_ands, create_bundle,
-    verify_declaration_signature, logger
+    map_to_regulations, verify_declaration_signature, logger
 )
 
 DEFAULT_TIMEOUT = 8
@@ -59,7 +59,7 @@ def main() -> int:
     ap.add_argument("--openapi-url")
     ap.add_argument("--out", default="")
     ap.add_argument("--bundle")
-    ap.add_argument("--sign-bundle")
+    ap.add_argument("--sign-bundle", action="append")
     ap.add_argument("--verify", action="store_true")
     ap.add_argument("--max-probes", type=int, default=15)
     ap.add_argument("-v", "--verbose", action="count", default=0)
@@ -175,7 +175,8 @@ def main() -> int:
         if declared_ands != inferred: gaps.append(f"Discrepancy: Declared {declared_ands} vs Inferred {inferred}")
     if not declared_cert: recs.append("Require certification_level (R>=4)")
 
-    report = ScanReport(base, True, declared_ands, declared_cert, inferred, round(conf, 2), evidence, gaps, sorted(set(recs)), probes)
+    regs = map_to_regulations(inferred)
+    report = ScanReport(base, True, declared_ands, declared_cert, inferred, round(conf, 2), evidence, gaps, sorted(set(recs)), probes, regs)
     out_json = json.dumps(asdict(report), indent=2)
     if args.out: Path(args.out).write_text(out_json + "\n")
     else: print(out_json)

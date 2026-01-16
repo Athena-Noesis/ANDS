@@ -49,11 +49,26 @@ class ANDSGuard(BaseHTTPRequestHandler):
                 self.wfile.write(b"BLOCKED BY ANDS GUARD: Policy check failed.")
                 return
 
-        # 2. Full Transparent Proxy
+        # 2. Full Transparent Proxy with Adaptive Sanitization
         try:
             # Read request body
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length) if content_length > 0 else None
+
+            # ADAPTIVE SHIELD: Sanitization logic
+            if body and self.server.max_risk < 5:
+                try:
+                    # Strip PII patterns (simple regex example for Infinity Tier)
+                    import re
+                    body_str = body.decode('utf-8', errors='ignore')
+                    # Mask emails and tool calls if risk is high
+                    body_str = re.sub(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', '[EMAIL_MASKED]', body_str)
+                    if risk >= 4:
+                        body_str = re.sub(r'(execute|run|shell|cmd)\(', 'blocked_tool_call(', body_str)
+                    body = body_str.encode('utf-8')
+                    # Update content length after sanitization
+                    self.headers['Content-Length'] = str(len(body))
+                except: pass
 
             # Prepare headers (filter hop-by-hop)
             headers = {k: v for k, v in self.headers.items() if k.lower() not in [

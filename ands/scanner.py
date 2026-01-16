@@ -76,6 +76,32 @@ def infer_ands(hints: List[str], evidence_list: List[Evidence], gaps_list: List[
     conf = max(0.1, min(0.9, 0.2 + (pos_weight * 0.1) - gap_penalty))
     return f"{C}.{A}.{M}.{G}.{R}", conf
 
+def map_to_regulations(ands_code: str) -> Dict[str, str]:
+    """Map ANDS score to major regulatory frameworks."""
+    parts = ands_code.split('.')
+    if len(parts) != 5: return {}
+    C, A, M, G, R = map(int, parts)
+
+    maps = {}
+
+    # EU AI Act (Approximation)
+    if R == 5: maps["EU AI Act"] = "PROHIBITED (Unacceptable Risk)"
+    elif R >= 4 or A >= 4: maps["EU AI Act"] = "HIGH RISK (Annex III)"
+    elif C >= 3: maps["EU AI Act"] = "GENERAL PURPOSE AI (Limited Risk)"
+    else: maps["EU AI Act"] = "MINIMAL RISK"
+
+    # NIST AI RMF
+    if G <= 2: maps["NIST AI RMF"] = "NON-COMPLIANT (Govern/Map failure)"
+    elif R >= 4: maps["NIST AI RMF"] = "HIGH EXPOSURE (Requires Measure/Manage)"
+    else: maps["NIST AI RMF"] = "RESILIENT"
+
+    # ISO/IEC 42001 (AIMS)
+    if G >= 4: maps["ISO 42001"] = "READY (Mature Governance)"
+    elif G >= 2: maps["ISO 42001"] = "PARTIAL (Needs Control alignment)"
+    else: maps["ISO 42001"] = "GAP (No AIMS foundation)"
+
+    return maps
+
 def analyze_probe_status(pr: ProbeResult, category: str, evidence: List[Evidence], gaps: List[str], recs: List[str]) -> None:
     if pr.status is None:
         gaps.append(f"Probe failed ({category}): {pr.url} ({pr.note})")
@@ -96,24 +122,36 @@ def analyze_probe_status(pr: ProbeResult, category: str, evidence: List[Evidence
         elif pr.status in (401, 403): evidence.append(Evidence("probe", f"Dangerous endpoint protected ({pr.status}): {pr.url}", 1.5))
     elif pr.status == 200: evidence.append(Evidence("probe", f"Safe endpoint reachable: {pr.url}", 1.2))
 
-def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, bytes], sign_key: Optional[str] = None):
+def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, bytes], sign_keys: List[str] = None):
+    """Create a multi-sig verifiable audit bundle."""
     bundle_path = out_path if out_path.endswith(".andsz") else out_path + ".andsz"
     manifest = {"timestamp": datetime.now(timezone.utc).isoformat(), "target": report.target, "files": {}}
     report_json = json.dumps(asdict(report), indent=2).encode("utf-8")
     manifest["files"]["report.json"] = hashlib.sha256(report_json).hexdigest()
     for name, content in evidence_files.items():
         manifest["files"][name] = hashlib.sha256(content).hexdigest()
+
     manifest_bytes = jcs.canonicalize(manifest)
+    signatures = []
+
+    if sign_keys:
+        for k in sign_keys:
+            try:
+                priv = Ed25519PrivateKey.from_private_bytes(base64.b64decode(k))
+                sig = priv.sign(manifest_bytes)
+                pub = priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+                signatures.append({
+                    "alg": "ed25519",
+                    "sig": base64.b64encode(sig).decode('utf-8'),
+                    "pubkey": base64.b64encode(pub).decode('utf-8')
+                })
+            except Exception as e: logger.error(f"Failed to sign bundle with key {k[:8]}: {e}")
+
     with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("report.json", report_json)
         zf.writestr("manifest.json", manifest_bytes)
-        if sign_key:
-            try:
-                priv = Ed25519PrivateKey.from_private_bytes(base64.b64decode(sign_key))
-                sig = priv.sign(manifest_bytes)
-                pub = priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
-                signature = {"alg": "ed25519", "sig": base64.b64encode(sig).decode('utf-8'), "pubkey": base64.b64encode(pub).decode('utf-8')}
-                zf.writestr("signature.json", json.dumps(signature, indent=2).encode("utf-8"))
-            except Exception as e: logger.error(f"Failed to sign bundle: {e}")
-        for name, content in evidence_files.items(): zf.writestr(f"evidence/{name}", content)
-    logger.info(f"Audit bundle created: {bundle_path}")
+        if signatures:
+            zf.writestr("signatures.json", json.dumps(signatures, indent=2).encode("utf-8"))
+        for name, content in evidence_files.items():
+            zf.writestr(f"evidence/{name}", content)
+    logger.info(f"Audit bundle created: {bundle_path} ({len(signatures)} sigs)")

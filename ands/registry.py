@@ -18,7 +18,13 @@ class RegistryStore:
     def save(self):
         with open(self.db_path, "w", encoding="utf-8") as f: json.dump(self.data, f, indent=2)
     def register(self, url: str):
-        self.data["systems"][url] = {"registered_at": time.time(), "last_scan": None, "status": "PENDING"}
+        if url not in self.data["systems"]:
+            self.data["systems"][url] = {
+                "registered_at": time.time(),
+                "history": [],
+                "last_scan": None,
+                "status": "PENDING"
+            }
         self.save()
 
 def fire_webhook(url: str, payload: Dict):
@@ -39,6 +45,19 @@ def background_auditor(store: RegistryStore, webhook_url: Optional[str] = None, 
                 if res.returncode == 0:
                     report = json.loads(res.stdout)
                     new_ands = report.get("inferred_ands")
+
+                    # Update history
+                    history_entry = {
+                        "timestamp": time.time(),
+                        "ands": new_ands,
+                        "confidence": report.get("confidence")
+                    }
+                    if "history" not in store.data["systems"][url]:
+                        store.data["systems"][url]["history"] = []
+                    store.data["systems"][url]["history"].append(history_entry)
+                    # Cap history to last 50
+                    store.data["systems"][url]["history"] = store.data["systems"][url]["history"][-50:]
+
                     if old_ands and new_ands and old_ands != new_ands:
                         if webhook_url: fire_webhook(webhook_url, {"event": "ands_drift", "target": url, "old_ands": old_ands, "new_ands": new_ands, "report": report})
                     store.data["systems"][url]["last_scan"] = report

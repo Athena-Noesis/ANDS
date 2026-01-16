@@ -14,16 +14,36 @@ async def dashboard():
     rows = ""
     for url, data in systems.items():
         status = data.get("status", "UNKNOWN")
-        ands = (data.get("last_scan") or {}).get("inferred_ands", "N/A")
-        rows += f"<tr><td>{url}</td><td>{status}</td><td>{ands}</td></tr>"
+        last_scan = data.get("last_scan") or {}
+        ands = last_scan.get("inferred_ands", "N/A")
+
+        # Temporal Trajectory
+        history = data.get("history", [])
+        trajectory = "Stable"
+        if len(history) >= 2:
+            prev = history[-2].get("ands")
+            curr = history[-1].get("ands")
+            if prev != curr: trajectory = f"Changed ({prev} ➔ {curr})"
+
+        rows += f"<tr><td>{url}</td><td>{status}</td><td><code>{ands}</code></td><td>{trajectory}</td></tr>"
 
     return f"""
     <html>
-    <head><title>ANDS Dashboard</title></head>
+    <head>
+        <title>ANDS Galactic Command Center</title>
+        <style>
+            body {{ font-family: sans-serif; padding: 2rem; background: #f4f4f9; }}
+            table {{ width: 100%; border-collapse: collapse; background: white; }}
+            th, td {{ padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }}
+            th {{ background: #1e3a8a; color: white; }}
+            tr:hover {{ background: #f9fafb; }}
+        </style>
+    </head>
     <body>
         <h1>ANDS Galactic Registry</h1>
-        <table border='1'>
-            <tr><th>Target</th><th>Status</th><th>ANDS</th></tr>
+        <p>Continuous AI Risk Monitoring</p>
+        <table>
+            <tr><th>Target URL</th><th>Status</th><th>Last ANDS</th><th>Temporal Trajectory</th></tr>
             {rows}
         </table>
     </body>
