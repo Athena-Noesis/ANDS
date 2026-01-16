@@ -51,5 +51,10 @@ async def dashboard():
     """
 
 if __name__ == "__main__":
+    import argparse
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=11000)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--port", type=int, default=11000, help="Listen port")
+    ap.add_argument("--host", default="0.0.0.0", help="Listen host")
+    args = ap.parse_args()
+    uvicorn.run(app, host=args.host, port=args.port)

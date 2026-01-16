@@ -6,6 +6,7 @@ Generates insurance-grade failure scenarios based on an ANDS profile.
 
 import argparse
 import json
+import os
 import sys
 from typing import List, Dict
 
@@ -68,16 +69,33 @@ def simulate_risk(ands_code: str) -> Dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("ands", help="ANDS code to simulate")
+    ap.add_argument("ands", help="ANDS code or path to ands.json to simulate")
     ap.add_argument("--json", action="store_true", help="Output as JSON")
     args = ap.parse_args()
 
-    result = simulate_risk(args.ands)
+    target_code = args.ands
+    if os.path.exists(args.ands):
+        try:
+            with open(args.ands, "r") as f:
+                data = json.load(f)
+                target_code = data.get("declared_ands") or data.get("ands")
+                if not target_code:
+                    print(f"Error: No ANDS code found in {args.ands}")
+                    sys.exit(1)
+        except Exception as e:
+            print(f"Error reading file {args.ands}: {e}")
+            sys.exit(1)
+
+    result = simulate_risk(target_code)
+
+    if "error" in result:
+        print(f"Error: {result['error']}")
+        sys.exit(1)
 
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        print(f"=== ANDS RISK SIMULATION: {args.ands} ===\n")
+        print(f"=== ANDS RISK SIMULATION: {target_code} ===\n")
         for s in result["scenarios"]:
             print(f"[{s['severity']}] {s['name']}")
             print(f"Detail: {s['description']}\n")
