@@ -1,0 +1,15 @@
+{
+  "system_id": "legacy.credit-scorer",
+  "ands_version": "1.0",
+  "declared_ands": "1.1.1.1.1",
+  "certification_level": "VERIFIED",
+  "capabilities": {
+    "tool_use": false,
+    "memory_persistence": false,
+    "autonomous_execution": false,
+    "state_mutation": false,
+    "code_execution": false
+  },
+  "contact": "data-science@legacy-bank.example.com",
+  "scope": ["Credit Scoring", "Risk Modeling"]
+}

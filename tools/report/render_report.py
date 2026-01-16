@@ -20,12 +20,17 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("report_json", help="Path to scan report JSON")
     ap.add_argument("--out", default="", help="Write Markdown to file")
+    ap.add_argument("--template", choices=["report", "scorecard"], default="report", help="Report template to use")
     args = ap.parse_args()
 
     with open(args.report_json, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
+    t_path = TEMPLATE_PATH
+    if args.template == "scorecard":
+        t_path = os.path.join(os.path.dirname(__file__), "templates", "scorecard.md.j2")
+
+    with open(t_path, "r", encoding="utf-8") as f:
         tmpl = Template(f.read())
 
     md = tmpl.render(r=data)

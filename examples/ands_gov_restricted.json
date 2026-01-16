@@ -1,0 +1,16 @@
+{
+  "system_id": "gov.secure-analyzer",
+  "ands_version": "1.0",
+  "declared_ands": "2.1.1.2.1",
+  "certification_level": "AUDITED",
+  "capabilities": {
+    "tool_use": false,
+    "memory_persistence": false,
+    "autonomous_execution": false,
+    "state_mutation": false,
+    "code_execution": false
+  },
+  "attestation_urls": ["https://gov.example.com/audit-report-2024.pdf"],
+  "contact": "security@gov.example.com",
+  "scope": ["Classified Document Analysis"]
+}
