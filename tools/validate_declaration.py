@@ -22,11 +22,13 @@ import sys
 from typing import Any, Dict
 
 from jsonschema import Draft202012Validator
+from referencing import Registry, Resource
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 
-SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "..", "spec", "well-known-ands.schema.json")
+SPEC_DIR = os.path.join(os.path.dirname(__file__), "..", "spec")
+SCHEMA_PATH = os.path.join(SPEC_DIR, "well-known-ands.schema.json")
 
 
 def canonicalize_for_signing(doc: Dict[str, Any]) -> bytes:
@@ -71,12 +73,21 @@ def main() -> int:
     args = ap.parse_args()
 
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
-        schema = json.load(f)
+        schema_data = json.load(f)
+
+    # Pre-load local schemas into a registry to handle relative $refs
+    registry: Registry = Registry()
+    for filename in os.listdir(SPEC_DIR):
+        if filename.endswith(".schema.json"):
+            with open(os.path.join(SPEC_DIR, filename), "r", encoding="utf-8") as f:
+                s = json.load(f)
+                resource = Resource.from_contents(s)
+                registry = registry.with_resource(uri=s.get("$id", filename), resource=resource)
 
     with open(args.path, "r", encoding="utf-8") as f:
         doc = json.load(f)
 
-    v = Draft202012Validator(schema)
+    v = Draft202012Validator(schema_data, registry=registry)
     errors = sorted(v.iter_errors(doc), key=lambda e: e.path)
 
     if errors:

@@ -26,6 +26,7 @@ import argparse
 import json
 import re
 from dataclasses import dataclass, asdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin
 
@@ -345,5 +346,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    from pathlib import Path
     raise SystemExit(main())

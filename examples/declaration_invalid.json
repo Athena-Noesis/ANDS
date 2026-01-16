@@ -1,0 +1,13 @@
+{
+  "system_id": "gemini.google-deepmind",
+  "ands_version": "1.0",
+  "declared_ands": "3.3.3.3.4",
+  "certification_level": "VERIFIED",
+  "contact": "https://gemini.google.com/",
+  "notes": "Functional example of a valid AI declaration for ANDS tool testing.",
+  "signed": {
+    "alg": "ed25519",
+    "pubkey": "Snd6aNbJhAzSbcFIzrrNLKI4vKN71mQ72dLZ7KFdlQ8=",
+    "sig": "aW52YWxpZC1zaWduYXR1cmUtZGF0YQ=="
+  }
+}
