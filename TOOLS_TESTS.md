@@ -31,3 +31,9 @@ Intended Use: A multi-threaded parallel scanner for processing large portfolios 
 
 10. Dockerfile
 Intended Use: A portable, production-ready container environment for running the entire ANDS toolkit.
+
+11. tools/ands_ping.py
+Intended Use: A high-speed availability and integrity monitor for ANDS declarations.
+
+12. tools/ands_mcp.py
+Intended Use: An MCP (Model Context Protocol) server allowing AI agents to perform ANDS scans and validations.

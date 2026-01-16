@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import logging
 import random
@@ -32,7 +33,9 @@ import socket
 import ssl
 import sys
 import time
+import zipfile
 from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin
@@ -453,6 +456,31 @@ def print_summary(report: ScanReport) -> None:
     out.write("\n")
 
 
+def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, bytes]):
+    """Create a verifiable audit bundle (.andsz) with evidence snapshots."""
+    bundle_path = out_path if out_path.endswith(".andsz") else out_path + ".andsz"
+
+    manifest = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "target": report.target,
+        "files": {}
+    }
+
+    report_json = json.dumps(asdict(report), indent=2).encode("utf-8")
+    manifest["files"]["report.json"] = hashlib.sha256(report_json).hexdigest()
+
+    for name, content in evidence_files.items():
+        manifest["files"][name] = hashlib.sha256(content).hexdigest()
+
+    with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("report.json", report_json)
+        zf.writestr("manifest.json", json.dumps(manifest, indent=2).encode("utf-8"))
+        for name, content in evidence_files.items():
+            zf.writestr(f"evidence/{name}", content)
+
+    logger.info(f"Audit bundle created: {bundle_path}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("target", help="Base URL or hostname (e.g., https://example.com)")
@@ -464,6 +492,7 @@ def main() -> int:
     ap.add_argument("--proxy", help="HTTP/HTTPS proxy URL")
     ap.add_argument("--openapi-url", help="Direct URL to openapi.json (skips discovery)")
     ap.add_argument("--out", default="", help="Write JSON report to file")
+    ap.add_argument("--bundle", help="Path to write a verifiable audit bundle (.andsz)")
     ap.add_argument("--verify", action="store_true", help="Enable non-invasive verification probes")
     ap.add_argument("--max-probes", type=int, default=15, help="Maximum number of probe requests (default 15)")
     ap.add_argument("-v", "--verbose", action="count", default=0, help="Increase verbosity")
@@ -490,6 +519,7 @@ def main() -> int:
     gaps: List[str] = []
     recs: List[str] = []
     probes: List[ProbeResult] = []
+    snapshot_files: Dict[str, bytes] = {}
 
     # TLS Integrity check
     check_tls_integrity(base, evidence)
@@ -527,6 +557,7 @@ def main() -> int:
     wk_url = urljoin(base, ".well-known/ands.json")
     rwk, _ = safe_request(session, "GET", wk_url, args.timeout, args.user_agent, args.retries, args.jitter, custom_headers)
     if rwk is not None and rwk.ok:
+        snapshot_files["ands.json"] = rwk.content
         try:
             data = rwk.json()
             cand = data.get("declared_ands") or data.get("ands") or data.get("declared")
@@ -577,6 +608,7 @@ def main() -> int:
     for oa_url in oa_urls:
         roa, _ = safe_request(session, "GET", oa_url, args.timeout, args.user_agent, args.retries, args.jitter, custom_headers)
         if roa is not None and roa.ok:
+            snapshot_files[Path(oa_url).name] = roa.content
             try:
                 if oa_url.endswith((".yaml", ".yml")):
                     openapi = yaml.safe_load(roa.text)
@@ -682,6 +714,9 @@ def main() -> int:
         Path(args.out).write_text(out_json + "\n", encoding="utf-8")
     else:
         print(out_json)
+
+    if args.bundle:
+        create_bundle(args.bundle, report, snapshot_files)
 
     # Always print summary to stderr for usability
     print_summary(report)
