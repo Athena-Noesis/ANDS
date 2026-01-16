@@ -30,15 +30,22 @@ def load_reports(directory: str) -> List[Dict[str, Any]]:
                 print(f"Warning: Failed to load {path}: {e}", file=sys.stderr)
     return reports
 
-def generate_markdown(reports: List[Dict[str, Any]]) -> str:
+def generate_markdown(reports: List[Dict[str, Any]], baseline_reports: List[Dict[str, Any]] = None) -> str:
     if not reports:
         return "No valid reports found."
+
+    baseline_map = {}
+    if baseline_reports:
+        for br in baseline_reports:
+            target = br.get("target", "")
+            if target:
+                baseline_map[target] = br
 
     lines = [
         "# ANDS Portfolio Summary",
         "",
-        "| Target | Declared | Inferred | Conf | Cert | Risk (R) |",
-        "| :--- | :---: | :---: | :---: | :---: | :---: |"
+        "| Target | Declared | Inferred | Conf | Cert | Risk (R) | Drift |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |"
     ]
 
     for r in sorted(reports, key=lambda x: x.get("target", "")):
@@ -49,7 +56,15 @@ def generate_markdown(reports: List[Dict[str, Any]]) -> str:
         cert = r.get("declared_certification_level") or "N/A"
         risk = inf.split('.')[-1] if inf != "N/A" else "N/A"
 
-        lines.append(f"| {target} | {decl} | {inf} | {conf} | {cert} | {risk} |")
+        drift = "N/A"
+        if target in baseline_map:
+            b_inf = baseline_map[target].get("inferred_ands", "N/A")
+            if b_inf != inf:
+                drift = f"**{b_inf} -> {inf}**"
+            else:
+                drift = "stable"
+
+        lines.append(f"| {target} | {decl} | {inf} | {conf} | {cert} | {risk} | {drift} |")
 
     return "\n".join(lines)
 
@@ -76,17 +91,22 @@ def generate_csv(reports: List[Dict[str, Any]]) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("directory", help="Directory containing ANDS report JSON files")
+    ap.add_argument("--baseline", help="Directory containing baseline ANDS report JSON files for drift detection")
     ap.add_argument("--format", choices=["markdown", "csv"], default="markdown")
     ap.add_argument("--out", help="Write summary to file")
     args = ap.parse_args()
 
     reports = load_reports(args.directory)
     if not reports:
-        print("No valid reports found.")
+        print("No valid reports found in primary directory.")
         sys.exit(1)
 
+    baseline_reports = None
+    if args.baseline:
+        baseline_reports = load_reports(args.baseline)
+
     if args.format == "markdown":
-        output = generate_markdown(reports)
+        output = generate_markdown(reports, baseline_reports)
     else:
         output = generate_csv(reports)
 

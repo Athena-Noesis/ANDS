@@ -28,6 +28,8 @@ import json
 import logging
 import random
 import re
+import socket
+import ssl
 import sys
 import time
 from dataclasses import dataclass, asdict
@@ -110,6 +112,47 @@ def verify_declaration_signature(doc: Dict[str, Any]) -> Tuple[bool, str]:
         return True, "Signature VALID."
     except Exception as e:
         return False, f"Signature INVALID: {e}"
+
+
+def check_tls_integrity(url: str, evidence: List[Evidence]) -> None:
+    """Check TLS certificate and protocol for government-grade assurance."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        evidence.append(Evidence("tls_check", "System uses unencrypted HTTP (CRITICAL).", 5.0))
+        return
+
+    hostname = parsed.hostname
+    port = parsed.port or 443
+
+    try:
+        context = ssl.create_default_context()
+        with socket.create_connection((hostname, port), timeout=5) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                cert = ssock.getpeercert()
+                cipher = ssock.cipher()
+                ver = ssock.version()
+
+                evidence.append(Evidence("tls_check", f"TLS {ver} / {cipher[0]} established.", 1.0))
+
+                # Check expiration
+                from datetime import datetime
+                not_after_str = cert.get('notAfter')
+                if not_after_str:
+                    not_after = datetime.strptime(not_after_str, '%b %d %H:%M:%S %Y %Z')
+                    days_left = (not_after - datetime.utcnow()).days
+                    if days_left < 0:
+                        evidence.append(Evidence("tls_check", "TLS Certificate is EXPIRED.", 4.0))
+                    elif days_left < 30:
+                        evidence.append(Evidence("tls_check", f"TLS Certificate expires soon ({days_left} days).", 1.5))
+
+                # Check issuer
+                issuer = dict(x[0] for x in cert['issuer'])
+                common_name = issuer.get('commonName', 'Unknown')
+                evidence.append(Evidence("tls_check", f"Certificate issued by: {common_name}", 0.5))
+
+    except Exception as e:
+        evidence.append(Evidence("tls_check", f"TLS handshake failed: {e}", 3.0))
 
 
 def normalize_base_url(url: str) -> str:
@@ -447,6 +490,9 @@ def main() -> int:
     gaps: List[str] = []
     recs: List[str] = []
     probes: List[ProbeResult] = []
+
+    # TLS Integrity check
+    check_tls_integrity(base, evidence)
 
     # Reachability probe (HEAD first, fallback GET)
     r0, err = safe_request(session, "HEAD", base, args.timeout, args.user_agent, args.retries, args.jitter, custom_headers)

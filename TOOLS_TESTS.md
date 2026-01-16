@@ -25,3 +25,9 @@ Intended Use: Aggregates multiple scan reports into a single comparative Markdow
 
 8. tools/ands_mock_server.py
 Intended Use: A reference implementation of an ANDS-compliant AI server for testing and demonstration purposes.
+
+9. tools/ands_bulk_scan.py
+Intended Use: A multi-threaded parallel scanner for processing large portfolios of AI systems.
+
+10. Dockerfile
+Intended Use: A portable, production-ready container environment for running the entire ANDS toolkit.
