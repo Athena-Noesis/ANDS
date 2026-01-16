@@ -43,7 +43,8 @@ from urllib.parse import urljoin
 import jcs
 import requests
 import yaml
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 DEFAULT_TIMEOUT = 8
 DEFAULT_USER_AGENT = "ands-scan/1.1"
@@ -463,7 +464,7 @@ def print_summary(report: ScanReport) -> None:
     out.write("\n")
 
 
-def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, bytes]):
+def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, bytes], sign_key: Optional[str] = None):
     """Create a verifiable audit bundle (.andsz) with evidence snapshots."""
     bundle_path = out_path if out_path.endswith(".andsz") else out_path + ".andsz"
 
@@ -479,9 +480,30 @@ def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, b
     for name, content in evidence_files.items():
         manifest["files"][name] = hashlib.sha256(content).hexdigest()
 
+    manifest_bytes = jcs.canonicalize(manifest)
+
     with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("report.json", report_json)
-        zf.writestr("manifest.json", json.dumps(manifest, indent=2).encode("utf-8"))
+        zf.writestr("manifest.json", manifest_bytes)
+
+        if sign_key:
+            try:
+                k_bytes = base64.b64decode(sign_key)
+                priv = Ed25519PrivateKey.from_private_bytes(k_bytes)
+                sig = priv.sign(manifest_bytes)
+                pub = priv.public_key()
+                pub_bytes = pub.public_bytes(encoding=serialization.Encoding.Raw, format=serialization.PublicFormat.Raw)
+
+                signature = {
+                    "alg": "ed25519",
+                    "sig": base64.b64encode(sig).decode('utf-8'),
+                    "pubkey": base64.b64encode(pub_bytes).decode('utf-8')
+                }
+                zf.writestr("signature.json", json.dumps(signature, indent=2).encode("utf-8"))
+                logger.info("Audit bundle signed by auditor.")
+            except Exception as e:
+                logger.error(f"Failed to sign bundle: {e}")
+
         for name, content in evidence_files.items():
             zf.writestr(f"evidence/{name}", content)
 
@@ -503,6 +525,7 @@ def main() -> int:
     ap.add_argument("--openapi-url", help="Direct URL to openapi.json (skips discovery)")
     ap.add_argument("--out", default="", help="Write JSON report to file")
     ap.add_argument("--bundle", help="Path to write a verifiable audit bundle (.andsz)")
+    ap.add_argument("--sign-bundle", help="Base64 Ed25519 private key to sign the audit bundle")
     ap.add_argument("--verify", action="store_true", help="Enable non-invasive verification probes")
     ap.add_argument("--max-probes", type=int, default=15, help="Maximum number of probe requests (default 15)")
     ap.add_argument("-v", "--verbose", action="count", default=0, help="Increase verbosity")
@@ -726,7 +749,7 @@ def main() -> int:
         print(out_json)
 
     if args.bundle:
-        create_bundle(args.bundle, report, snapshot_files)
+        create_bundle(args.bundle, report, snapshot_files, args.sign_bundle)
 
     # Always print summary to stderr for usability
     print_summary(report)

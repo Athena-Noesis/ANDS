@@ -54,4 +54,7 @@ Intended Use: A reverse-proxy that enforces ANDS risk policies in real-time by b
 Intended Use: A registry server (The Oracle) that indexes and periodically re-scans a fleet of AI systems.
 
 18. tools/ands_serve.py
-Intended Use: A zero-code way for vendors to serve a compliant ands.json declaration.
+Intended Use: A zero-code way for vendors to serve a compliant ands.json declaration and a live HTML scorecard.
+
+19. tools/ands_explorer.py
+Intended Use: Generates a portable, interactive HTML dashboard for auditing large portfolios of AI systems.

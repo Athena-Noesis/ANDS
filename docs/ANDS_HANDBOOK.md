@@ -29,13 +29,14 @@ The ANDS ecosystem provides a full lifecycle of tools:
 - **`ands_scan.py`**: The "Gold Standard" scanner. Resilient, thorough, and produces verifiable audit bundles (`.andsz`).
 - **`ands_verify_bundle.py`**: A forensic verifier for `.andsz` bundles to prove point-in-time compliance.
 - **`ands_bulk_scan.py`**: Parallel scanner for processing entire portfolios of hundreds of AI systems.
-- **`ands_summarize.py`**: A dashboard tool to compare systems and detect "Capability Drift" over time.
+- **`ands_explorer.py`**: Generates a standalone, interactive HTML dashboard for your entire AI portfolio.
+- **`ands_summarize.py`**: A CLI tool to compare systems and detect "Capability Drift" over time.
 - **`ands_badge.py`**: Generates SVG badges for social proof of your ANDS classification.
 
 ### For Infrastructure & Governance
 - **`ands_guard.py`**: An active reverse-proxy that blocks traffic to AI systems that exceed your Risk (R) appetite.
 - **`ands_registry.py`**: A "Galactic Oracle" server to maintain an index of all compliant AI in your network.
-- **`ands_serve.py`**: A zero-code "Launchpad" to host your signed `ands.json` file instantly.
+- **`ands_serve.py`**: A zero-code "Launchpad" that serves your JSON declaration and a live HTML scorecard at `/ands-report`.
 
 ### For Developers (Automation & AI)
 - **`ands_ci.py`**: CI-optimized validator for GitHub Actions.

@@ -6,11 +6,15 @@ Usage:
 """
 
 import argparse
+import base64
 import hashlib
 import json
 import sys
 import zipfile
 from typing import Dict
+
+import jcs
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 def verify_bundle(path: str) -> bool:
     print(f"[*] Verifying Audit Bundle: {path}")
@@ -52,7 +56,29 @@ def verify_bundle(path: str) -> bool:
                     else:
                         print(f"✅ VERIFIED: {zname}")
 
-            # 3. Basic Scan Report Check
+            # 3. Verify Auditor Signature (Optional)
+            if "signature.json" in zf.namelist():
+                with zf.open("signature.json") as f:
+                    sig_data = json.loads(f.read().decode('utf-8'))
+
+                try:
+                    pub_bytes = base64.b64decode(sig_data["pubkey"])
+                    sig_bytes = base64.b64decode(sig_data["sig"])
+
+                    # Manifest bytes are needed exactly as they were signed
+                    with zf.open("manifest.json") as f:
+                        manifest_bytes = f.read()
+
+                    pk = Ed25519PublicKey.from_public_bytes(pub_bytes)
+                    pk.verify(sig_bytes, manifest_bytes)
+                    print(f"✅ AUDITOR SIGNATURE VERIFIED: {sig_data['pubkey'][:16]}...")
+                except Exception as e:
+                    print(f"❌ FAILED: Auditor signature invalid: {e}")
+                    return False
+            else:
+                print("[!] Warning: Bundle is not signed by an auditor.")
+
+            # 4. Basic Scan Report Check
             with zf.open("report.json") as f:
                 report = json.loads(f.read().decode('utf-8'))
                 ands = report.get("inferred_ands", "N/A")

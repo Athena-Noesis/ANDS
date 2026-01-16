@@ -45,6 +45,14 @@
       },
       "description": "Links to human-readable attestations (e.g. self-attestation.md)"
     },
+    "sbom_urls": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "description": "Links to Software Bill of Materials (SBOM) for the AI system (CycloneDX/SPDX)"
+    },
     "capabilities": {
       "type": "object",
       "additionalProperties": false,
