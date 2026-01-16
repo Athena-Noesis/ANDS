@@ -14,11 +14,7 @@ To avoid ambiguity, the signature is computed over a canonical JSON string of th
 Algorithm:
 1. Parse the JSON into an object.
 2. Remove the top-level key `signed` if present.
-3. Serialize using:
-   - UTF-8
-   - `sort_keys=True`
-   - `separators=(",", ":")`
-   - no pretty printing
+3. Serialize using **RFC 8785 (JSON Canonicalization Scheme)**.
 4. Sign the resulting bytes with Ed25519.
 
 ## Fields
