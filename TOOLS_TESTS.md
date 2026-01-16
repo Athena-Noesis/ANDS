@@ -37,3 +37,9 @@ Intended Use: A high-speed availability and integrity monitor for ANDS declarati
 
 12. tools/ands_mcp.py
 Intended Use: An MCP (Model Context Protocol) server allowing AI agents to perform ANDS scans and validations.
+
+13. tools/ands_discover.py
+Intended Use: A high-speed network discovery tool to find AI systems exposing ANDS declarations within IP ranges.
+
+14. action.yml
+Intended Use: A formal GitHub Action to automate ANDS declaration validation in CI/CD pipelines.

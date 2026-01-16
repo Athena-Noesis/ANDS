@@ -167,10 +167,23 @@ def normalize_base_url(url: str) -> str:
     return url
 
 
-def get_session(retries: int, proxy: Optional[str] = None) -> requests.Session:
+def get_session(
+    retries: int,
+    proxy: Optional[str] = None,
+    cert: Optional[str] = None,
+    key: Optional[str] = None,
+    cacert: Optional[str] = None
+) -> requests.Session:
     s = requests.Session()
     if proxy:
         s.proxies = {"http": proxy, "https": proxy}
+
+    if cert:
+        # cert can be a single file or a tuple (cert, key)
+        s.cert = (cert, key) if key else cert
+
+    if cacert:
+        s.verify = cacert
 
     # We implement our own retry logic in safe_request for jitter support,
     # but we still use Session for connection pooling.
@@ -490,6 +503,9 @@ def main() -> int:
     ap.add_argument("--user-agent", default=DEFAULT_USER_AGENT, help="User-Agent header for requests")
     ap.add_argument("-H", "--header", action="append", help="Custom headers (Key: Value)")
     ap.add_argument("--proxy", help="HTTP/HTTPS proxy URL")
+    ap.add_argument("--cert", help="Path to client certificate file (mTLS)")
+    ap.add_argument("--key", help="Path to client private key file (mTLS)")
+    ap.add_argument("--cacert", help="Path to CA bundle/certificate for verification")
     ap.add_argument("--openapi-url", help="Direct URL to openapi.json (skips discovery)")
     ap.add_argument("--out", default="", help="Write JSON report to file")
     ap.add_argument("--bundle", help="Path to write a verifiable audit bundle (.andsz)")
@@ -506,7 +522,7 @@ def main() -> int:
         lvl = logging.DEBUG
     logging.basicConfig(level=lvl, format="%(levelname)s: %(message)s", stream=sys.stderr)
 
-    session = get_session(args.retries, args.proxy)
+    session = get_session(args.retries, args.proxy, args.cert, args.key, args.cacert)
     custom_headers: Dict[str, str] = {}
     if args.header:
         for h in args.header:
