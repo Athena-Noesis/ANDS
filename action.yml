@@ -1,0 +1,32 @@
+name: 'ANDS Validation'
+description: 'Validates ands.json declarations for schema compliance and cryptographic integrity.'
+inputs:
+  path:
+    description: 'Path to the ands.json file'
+    required: true
+    default: '.well-known/ands.json'
+  verify-signature:
+    description: 'Whether to verify the Ed25519 signature'
+    required: false
+    default: 'true'
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    - name: Install dependencies
+      run: pip install -r ${{ github.action_path }}/tools/requirements.txt
+      shell: bash
+    - name: Run ANDS Validator
+      run: |
+        ARGS="${{ inputs.path }}"
+        if [ "${{ inputs.verify-signature }}" = "true" ]; then
+          ARGS="$ARGS --verify-signature"
+        fi
+        python3 ${{ github.action_path }}/tools/ands_ci.py $ARGS
+      shell: bash
+branding:
+  icon: 'shield'
+  color: 'blue'

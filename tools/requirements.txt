@@ -5,3 +5,6 @@ cryptography>=42.0.0
 referencing>=0.30.0
 jcs>=0.2.1
 PyYAML>=6.0.0
+segno>=1.6.0
+fastapi>=0.110.0
+uvicorn>=0.27.0

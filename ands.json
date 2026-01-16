@@ -1,0 +1,22 @@
+{
+  "system_id": "sys",
+  "ands_version": "1.0",
+  "declared_ands": "3.2.1.1.4",
+  "certification_level": "SELF",
+  "capabilities": {
+    "tool_use": true,
+    "memory_persistence": false,
+    "autonomous_execution": false,
+    "state_mutation": true,
+    "code_execution": false
+  },
+  "attestation_urls": [
+    "http://ex.com"
+  ],
+  "contact": "con",
+  "signed": {
+    "alg": "ed25519",
+    "sig": "1C/2FHAomMhDxGmSdZdlYJRONtao7linddj+uoe3bYsNYUPsQaSaLjlquqrGrZaTKd6K5zjEuUXFEJIqyaJXCg==",
+    "pubkey": "gMhDvl5v8LoYqMNNEj6QLz7WnPIzVZs+6avip5wJdrk="
+  }
+}

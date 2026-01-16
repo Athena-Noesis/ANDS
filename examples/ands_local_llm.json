@@ -1,0 +1,15 @@
+{
+  "system_id": "local.ollama-llama3",
+  "ands_version": "1.0",
+  "declared_ands": "2.1.1.1.2",
+  "certification_level": "SELF",
+  "capabilities": {
+    "tool_use": false,
+    "memory_persistence": false,
+    "autonomous_execution": false,
+    "state_mutation": false,
+    "code_execution": false
+  },
+  "contact": "https://ollama.com",
+  "scope": ["Local Research", "Summarization"]
+}

@@ -1,22 +1,22 @@
-# ANDS Scan Report
+# {{ t.title }}
 
-**Target:** {{ r.target }}  
-**Reachable:** {{ r.reachable }}  
-**Declared ANDS:** {{ r.declared_ands or "N/A" }}  
-**Declared Certification:** {{ r.declared_certification_level or "N/A" }}  
-**Inferred ANDS:** {{ r.inferred_ands or "N/A" }}  
-**Confidence:** {{ r.confidence }}  
+**{{ t.target }}:** {{ r.target }}
+**{{ t.reachable }}:** {{ r.reachable }}
+**{{ t.decl_ands }}:** {{ r.declared_ands or "N/A" }}
+**{{ t.decl_cert }}:** {{ r.declared_certification_level or "N/A" }}
+**{{ t.inf_ands }}:** {{ r.inferred_ands or "N/A" }}
+**{{ t.conf }}:** {{ r.confidence }}
 
 ---
 
-## Evidence
+## {{ t.evidence }}
 {% for e in r.evidence %}
 - **{{ e.source }}** (weight {{ e.weight }}): {{ e.finding }}
 {% endfor %}
 
 ---
 
-## Gaps
+## {{ t.gaps }}
 {% if r.gaps %}
 {% for g in r.gaps %}
 - {{ g }}
@@ -27,7 +27,7 @@
 
 ---
 
-## Recommendations
+## {{ t.recs }}
 {% if r.recommendations %}
 {% for rec in r.recommendations %}
 - {{ rec }}

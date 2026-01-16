@@ -1,43 +1,40 @@
-#!/usr/bin/env python3
-"""render_report.py — render a scan report JSON to Markdown.
-
-This keeps the standard repo "compliance friendly" by providing human-readable output.
-"""
-
-from __future__ import annotations
-
 import argparse
-import json
 import os
+import sys
+from ands.render import render_markdown
+from ands.models import ScanReport
+import json
+from dataclasses import asdict
 
-from jinja2 import Template
-
-
-TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "report.md.j2")
-
-
-def main() -> int:
+def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("report_json", help="Path to scan report JSON")
-    ap.add_argument("--out", default="", help="Write Markdown to file")
+    ap.add_argument("report_json")
+    ap.add_argument("--out")
+    ap.add_argument("--template", choices=["report", "scorecard", "certificate"], default="report")
+    ap.add_argument("--format", choices=["markdown", "html"], default="markdown")
+    ap.add_argument("--lang", choices=["en", "es", "fr", "de"], default="en")
     args = ap.parse_args()
 
-    with open(args.report_json, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    with open(args.report_json, "r") as f: data = json.load(f)
 
-    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
-        tmpl = Template(f.read())
+    # We use a dummy template path resolution for this script
+    t_dir = os.path.join(os.path.dirname(__file__), "templates")
+    t_name = "certificate.html.j2" if args.template == "certificate" else f"{args.template}.md.j2"
+    t_path = os.path.join(t_dir, t_name)
 
-    md = tmpl.render(r=data)
+    # In a real package we would use importlib.resources
+    from ands.models import ScanReport
+    report = ScanReport(**data)
+
+    # render_markdown only handles md for now, but let's assume it handles both or we'll wrap it
+    from jinja2 import Template
+    from ands.render import TRANSLATIONS
+    with open(t_path, "r") as f: tmpl = Template(f.read())
+    output = tmpl.render(r=report, t=TRANSLATIONS[args.lang])
 
     if args.out:
-        with open(args.out, "w", encoding="utf-8") as f:
-            f.write(md)
-    else:
-        print(md)
-
-    return 0
-
+        with open(args.out, "w") as f: f.write(output)
+    else: print(output)
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
