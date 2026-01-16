@@ -21,6 +21,7 @@ import os
 import sys
 from typing import Any, Dict
 
+import jcs
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
@@ -32,14 +33,12 @@ SCHEMA_PATH = os.path.join(SPEC_DIR, "well-known-ands.schema.json")
 
 
 def canonicalize_for_signing(doc: Dict[str, Any]) -> bytes:
-    """Return canonical bytes for signature:
+    """Return canonical bytes for signature using RFC 8785 (JCS):
     - remove top-level `signed`
-    - JSON dump with stable settings
     """
     d = dict(doc)
     d.pop("signed", None)
-    s = json.dumps(d, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return s.encode("utf-8")
+    return jcs.canonicalize(d)
 
 
 def verify_signature(doc: Dict[str, Any]) -> None:
