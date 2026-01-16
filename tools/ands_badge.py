@@ -7,6 +7,7 @@ Usage:
 
 import argparse
 import sys
+import segno
 
 def generate_svg(ands_code: str, label: str = "ANDS") -> str:
     """Generate a flat-style SVG badge."""
@@ -53,18 +54,31 @@ def generate_svg(ands_code: str, label: str = "ANDS") -> str:
 </svg>"""
     return svg
 
+def generate_qr(url: str) -> str:
+    """Generate an SVG QR code for the given URL."""
+    qr = segno.make(url, error='h')
+    import io
+    buff = io.BytesIO()
+    qr.save(buff, kind='svg', scale=4)
+    return buff.getvalue().decode('utf-8')
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("ands", help="ANDS code (e.g., 2.1.2.1.3)")
+    ap.add_argument("ands", help="ANDS code or Report URL (if using --qr)")
     ap.add_argument("--label", default="ANDS", help="Badge label (default: ANDS)")
     ap.add_argument("--out", default="ands-badge.svg", help="Output filename")
+    ap.add_argument("--qr", action="store_true", help="Generate a QR code instead of a score badge")
     args = ap.parse_args()
 
-    svg = generate_svg(args.ands, args.label)
+    if args.qr:
+        content = generate_qr(args.ands)
+    else:
+        content = generate_svg(args.ands, args.label)
+
     try:
         with open(args.out, "w", encoding="utf-8") as f:
-            f.write(svg)
-        print(f"Successfully generated badge: {args.out}")
+            f.write(content)
+        print(f"Successfully generated { 'QR' if args.qr else 'badge' }: {args.out}")
     except Exception as e:
         print(f"Error writing file: {e}")
         sys.exit(1)

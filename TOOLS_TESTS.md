@@ -58,3 +58,6 @@ Intended Use: A zero-code way for vendors to serve a compliant ands.json declara
 
 19. tools/ands_explorer.py
 Intended Use: Generates a portable, interactive HTML dashboard for auditing large portfolios of AI systems.
+
+20. tools/ands_simulate.py
+Intended Use: A risk simulation engine that translates ANDS profiles into descriptive failure scenarios for insurers.

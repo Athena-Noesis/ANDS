@@ -8,7 +8,7 @@ import argparse
 import json
 import requests
 import sys
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urljoin
 
 class ANDSGuard(BaseHTTPRequestHandler):
@@ -98,7 +98,7 @@ def main():
     args = ap.parse_args()
 
     server_address = ("", args.port)
-    httpd = HTTPServer(server_address, ANDSGuard)
+    httpd = ThreadingHTTPServer(server_address, ANDSGuard)
     httpd.target_url = args.target
     httpd.max_risk = args.max_risk
     httpd.strict = args.strict

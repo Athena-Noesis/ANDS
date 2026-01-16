@@ -43,6 +43,11 @@ The ANDS ecosystem provides a full lifecycle of tools:
 - **`ands_mcp.py`**: An MCP server that lets AI agents (like Claude) perform audits for you.
 - **`ands_ping.py`**: Ultra-fast integrity monitor for SREs.
 
+### For Global & Predictive Governance
+- **`ands_simulate.py`**: Generates insurance-grade failure scenarios based on an ANDS profile.
+- **`ands_badge.py --qr`**: Generates high-speed QR codes for mobile auditing and physical assets.
+- **Internationalization (i18n)**: All reports and certificates support multi-language output (EN, ES, FR, DE).
+
 ---
 
 ## 3. Deployment: Docker & mTLS
