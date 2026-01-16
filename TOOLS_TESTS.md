@@ -43,3 +43,15 @@ Intended Use: A high-speed network discovery tool to find AI systems exposing AN
 
 14. action.yml
 Intended Use: A formal GitHub Action to automate ANDS declaration validation in CI/CD pipelines.
+
+15. tools/ands_verify_bundle.py
+Intended Use: A forensic tool to verify the integrity and provenance of .andsz audit bundles.
+
+16. tools/ands_guard.py
+Intended Use: A reverse-proxy that enforces ANDS risk policies in real-time by blocking traffic to high-risk systems.
+
+17. tools/ands_registry.py
+Intended Use: A registry server (The Oracle) that indexes and periodically re-scans a fleet of AI systems.
+
+18. tools/ands_serve.py
+Intended Use: A zero-code way for vendors to serve a compliant ands.json declaration.
