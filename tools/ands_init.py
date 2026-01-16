@@ -15,9 +15,6 @@ import jcs
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
-def clear():
-    os.system('cls' if os.name == 'nt' else 'clear')
-
 def get_input(prompt: str, default: str = "") -> str:
     p = f"{prompt} [{default}]: " if default else f"{prompt}: "
     val = input(p).strip()

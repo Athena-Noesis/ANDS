@@ -43,8 +43,6 @@ from urllib.parse import urljoin
 import jcs
 import requests
 import yaml
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 DEFAULT_TIMEOUT = 8
@@ -139,11 +137,11 @@ def check_tls_integrity(url: str, evidence: List[Evidence]) -> None:
                 evidence.append(Evidence("tls_check", f"TLS {ver} / {cipher[0]} established.", 1.0))
 
                 # Check expiration
-                from datetime import datetime
                 not_after_str = cert.get('notAfter')
                 if not_after_str:
-                    not_after = datetime.strptime(not_after_str, '%b %d %H:%M:%S %Y %Z')
-                    days_left = (not_after - datetime.utcnow()).days
+                    # Using global datetime and timezone imports
+                    not_after = datetime.strptime(not_after_str, '%b %d %H:%M:%S %Y %Z').replace(tzinfo=timezone.utc)
+                    days_left = (not_after - datetime.now(timezone.utc)).days
                     if days_left < 0:
                         evidence.append(Evidence("tls_check", "TLS Certificate is EXPIRED.", 4.0))
                     elif days_left < 30:
@@ -320,10 +318,6 @@ def pick_probe_paths(openapi: Optional[Dict[str, Any]]) -> Dict[str, List[str]]:
 def infer_ands(hints: List[str], evidence_list: List[Evidence], gaps_list: List[str]) -> Tuple[str, float]:
     # Conservative baseline
     C, A, M, G, R = 2, 1, 1, 1, 3
-
-    # Track findings to avoid duplicate weighting in evidence_list
-    # We use a set to track which hints we've already processed
-    processed_hints = set()
 
     # Probe-based boosts
     probe_txt = " ".join(e.finding for e in evidence_list if e.source == "probe").lower()

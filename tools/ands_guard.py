@@ -12,23 +12,23 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urljoin
 
 class ANDSGuard(BaseHTTPRequestHandler):
-    def do_POST(self):
-        self.handle_proxy()
-
-    def do_GET(self):
-        self.handle_proxy()
+    def do_GET(self): self.handle_proxy()
+    def do_POST(self): self.handle_proxy()
+    def do_PUT(self): self.handle_proxy()
+    def do_DELETE(self): self.handle_proxy()
+    def do_PATCH(self): self.handle_proxy()
 
     def handle_proxy(self):
         target = self.server.target_url
         max_risk = self.server.max_risk
 
-        # 1. Fetch ANDS Score
+        # 1. Fetch ANDS Score (Risk Policy Enforcement)
         ands_url = urljoin(target, "/.well-known/ands.json")
         try:
-            r = requests.get(ands_url, timeout=2)
-            if r.ok:
-                doc = r.json()
-                ands = doc.get("declared_ands", "0.0.0.0.5") # Default to high risk if not found
+            r_policy = requests.get(ands_url, timeout=2)
+            if r_policy.ok:
+                doc = r_policy.json()
+                ands = doc.get("declared_ands", "0.0.0.0.5")
                 risk = int(ands.split('.')[-1])
 
                 if risk > max_risk:
@@ -36,26 +36,58 @@ class ANDSGuard(BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(f"BLOCKED BY ANDS GUARD: Risk Axis {risk} exceeds policy limit {max_risk}.".encode('utf-8'))
                     return
-            else:
-                # If no ANDS declaration, block it if policy is strict
-                if self.server.strict:
-                    self.send_response(403)
-                    self.end_headers()
-                    self.wfile.write(b"BLOCKED BY ANDS GUARD: No ANDS declaration found (Strict Mode).")
-                    return
+            elif self.server.strict:
+                self.send_response(403)
+                self.end_headers()
+                self.wfile.write(b"BLOCKED BY ANDS GUARD: No ANDS declaration found (Strict Mode).")
+                return
         except Exception as e:
-            print(f"Guard Error: {e}", file=sys.stderr)
+            print(f"Guard Policy Error: {e}", file=sys.stderr)
+            if self.server.strict:
+                self.send_response(503)
+                self.end_headers()
+                self.wfile.write(b"BLOCKED BY ANDS GUARD: Policy check failed.")
+                return
 
-        # 2. Forward request (Simplified proxy logic)
+        # 2. Full Transparent Proxy
         try:
-            # We don't implement a full proxy here for brevity,
-            # but this shows the "Decision Engine" placement.
-            self.send_response(200)
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length) if content_length > 0 else None
+
+            # Prepare headers (filter hop-by-hop)
+            headers = {k: v for k, v in self.headers.items() if k.lower() not in [
+                'host', 'connection', 'keep-alive', 'proxy-authenticate',
+                'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade'
+            ]}
+
+            # Forward request to target
+            target_url = urljoin(target, self.path)
+            resp = requests.request(
+                method=self.command,
+                url=target_url,
+                headers=headers,
+                data=body,
+                allow_redirects=False,
+                timeout=10
+            )
+
+            # Send response back to client
+            self.send_response(resp.status_code)
+
+            # Filter hop-by-hop headers from response
+            for k, v in resp.headers.items():
+                if k.lower() not in ['connection', 'keep-alive', 'proxy-authenticate',
+                                    'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade']:
+                    self.send_header(k, v)
             self.end_headers()
-            self.wfile.write(b"SUCCESS: Request allowed by ANDS policy.")
+            self.wfile.write(resp.content)
+
         except Exception as e:
+            print(f"Proxy Forwarding Error: {e}", file=sys.stderr)
             self.send_response(502)
             self.end_headers()
+            self.wfile.write(f"ANDS Proxy Error: {e}".encode('utf-8'))
 
 def main():
     ap = argparse.ArgumentParser()
