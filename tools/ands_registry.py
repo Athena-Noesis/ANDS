@@ -70,50 +70,63 @@ def fire_webhook(url: str, payload: Dict):
     except:
         pass
 
-def background_auditor(store: RegistryStore, webhook_url: Optional[str] = None):
-    """Periodically re-scans registered systems."""
-    print("[*] Oracle background auditor started.")
+def background_auditor(store: RegistryStore, webhook_url: Optional[str] = None, interval_secs: int = 86400):
+    """Periodically re-scans registered systems with staggered delays."""
+    print(f"[*] Oracle background auditor started (Interval: {interval_secs}s).")
     while True:
-        for url in list(store.data["systems"].keys()):
+        systems = list(store.data["systems"].keys())
+        if not systems:
+            time.sleep(60)
+            continue
+
+        for url in systems:
             print(f"[*] Auditing {url}...")
             old_ands = (store.data["systems"][url].get("last_scan") or {}).get("inferred_ands")
 
-            # We call the scanner tool
-            res = subprocess.run([sys.executable, "tools/ands_scan.py", url], capture_output=True, text=True)
-            if res.returncode == 0:
-                report = json.loads(res.stdout)
-                new_ands = report.get("inferred_ands")
+            # Use subprocess to call the scanner for isolation
+            try:
+                res = subprocess.run([sys.executable, "tools/ands_scan.py", url], capture_output=True, text=True)
+                if res.returncode == 0:
+                    report = json.loads(res.stdout)
+                    new_ands = report.get("inferred_ands")
 
-                # Check for drift/alerts
-                if old_ands and new_ands and old_ands != new_ands:
-                    print(f"[!] ALERT: Capability drift detected for {url} ({old_ands} -> {new_ands})")
-                    if webhook_url:
-                        fire_webhook(webhook_url, {
-                            "event": "ands_drift",
-                            "target": url,
-                            "old_ands": old_ands,
-                            "new_ands": new_ands,
-                            "report": report
-                        })
+                    # Check for drift/alerts
+                    if old_ands and new_ands and old_ands != new_ands:
+                        print(f"[!] ALERT: Capability drift detected for {url} ({old_ands} -> {new_ands})")
+                        if webhook_url:
+                            fire_webhook(webhook_url, {
+                                "event": "ands_drift",
+                                "target": url,
+                                "old_ands": old_ands,
+                                "new_ands": new_ands,
+                                "report": report
+                            })
 
-                store.data["systems"][url]["last_scan"] = report
-                store.data["systems"][url]["status"] = "ACTIVE"
-            else:
-                store.data["systems"][url]["status"] = "UNREACHABLE"
+                    store.data["systems"][url]["last_scan"] = report
+                    store.data["systems"][url]["status"] = "ACTIVE"
+                else:
+                    store.data["systems"][url]["status"] = "UNREACHABLE"
+            except Exception as e:
+                print(f"Error auditing {url}: {e}")
+
             store.save()
-        time.sleep(3600) # Scan hourly
+            # Stagger individual scans to prevent resource spikes
+            time.sleep(5)
+
+        time.sleep(interval_secs)
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default="ands_registry.json")
     ap.add_argument("--port", type=int, default=10000)
     ap.add_argument("--webhook", help="Webhook URL for drift alerts")
+    ap.add_argument("--audit-interval", type=int, default=86400, help="Interval between full audits (seconds, default 24h)")
     args = ap.parse_args()
 
     store = RegistryStore(args.db)
 
     # Start auditor thread
-    t = Thread(target=background_auditor, args=(store, args.webhook), daemon=True)
+    t = Thread(target=background_auditor, args=(store, args.webhook, args.audit_interval), daemon=True)
     t.start()
 
     server_address = ("", args.port)
