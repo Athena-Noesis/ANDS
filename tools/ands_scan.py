@@ -24,7 +24,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import re
+import time
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin
@@ -32,6 +34,7 @@ from urllib.parse import urljoin
 import requests
 
 DEFAULT_TIMEOUT = 8
+DEFAULT_USER_AGENT = "ands-scan/1.1"
 ANDS_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+\.\d+$")
 
 
@@ -47,6 +50,7 @@ class ProbeResult:
     url: str
     method: str
     status: Optional[int]
+    headers: Dict[str, str]
     note: str
 
 
@@ -73,12 +77,34 @@ def normalize_base_url(url: str) -> str:
     return url
 
 
-def safe_request(method: str, url: str, timeout: int) -> Tuple[Optional[requests.Response], Optional[str]]:
-    try:
-        r = requests.request(method, url, timeout=timeout, headers={"User-Agent": "ands-scan/1.1"})
-        return r, None
-    except Exception as e:
-        return None, str(e)
+def safe_request(
+    method: str,
+    url: str,
+    timeout: int,
+    user_agent: str = DEFAULT_USER_AGENT,
+    retries: int = 3,
+    jitter: float = 0.0
+) -> Tuple[Optional[requests.Response], Optional[str]]:
+    last_err = "UNKNOWN"
+    for attempt in range(retries + 1):
+        if attempt > 0:
+            # Exponential backoff: 0.5s, 1s, 2s...
+            backoff = (2 ** (attempt - 1)) * 0.5
+            sleep_time = backoff + (random.uniform(0, jitter) if jitter > 0 else 0)
+            time.sleep(sleep_time)
+
+        try:
+            r = requests.request(method, url, timeout=timeout, headers={"User-Agent": user_agent})
+            return r, None
+        except requests.exceptions.Timeout:
+            last_err = "TIMEOUT"
+        except requests.exceptions.RequestException as e:
+            last_err = f"ERROR ({type(e).__name__})"
+        except Exception as e:
+            last_err = f"ERROR ({str(e)})"
+            return None, last_err
+
+    return None, last_err
 
 
 def openapi_hints(openapi: Dict[str, Any]) -> List[str]:
@@ -176,6 +202,21 @@ def infer_ands(hints: List[str], evidence: List[Evidence], gaps: List[str]) -> T
 
 def analyze_probe_status(pr: ProbeResult, category: str, evidence: List[Evidence], gaps: List[str], recs: List[str]) -> None:
     """Interpret probe outcomes conservatively."""
+    # Check security headers
+    sec_headers = {
+        "Strict-Transport-Security": "HSTS",
+        "X-Content-Type-Options": "NoSniff",
+        "X-Frame-Options": "Anti-Clickjacking",
+        "Content-Security-Policy": "CSP"
+    }
+    found_sec = []
+    for h, label in sec_headers.items():
+        if any(h.lower() == k.lower() for k in pr.headers.keys()):
+            found_sec.append(label)
+
+    if found_sec:
+        evidence.append(Evidence("probe", f"Security headers found on {pr.url}: {', '.join(found_sec)}", 0.5))
+
     if pr.status is None:
         gaps.append(f"Probe failed ({category}): {pr.url} ({pr.note})")
         return
@@ -204,6 +245,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("target", help="Base URL or hostname (e.g., https://example.com)")
     ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
+    ap.add_argument("--retries", type=int, default=3, help="Number of retries for network requests")
+    ap.add_argument("--jitter", type=float, default=0.0, help="Max random jitter (seconds) to add between retries")
+    ap.add_argument("--user-agent", default=DEFAULT_USER_AGENT, help="User-Agent header for requests")
+    ap.add_argument("--openapi-url", help="Direct URL to openapi.json (skips discovery)")
     ap.add_argument("--out", default="", help="Write JSON report to file")
     ap.add_argument("--verify", action="store_true", help="Enable non-invasive verification probes")
     ap.add_argument("--max-probes", type=int, default=10, help="Maximum number of probe requests (default 10)")
@@ -216,9 +261,9 @@ def main() -> int:
     probes: List[ProbeResult] = []
 
     # Reachability probe (HEAD first, fallback GET)
-    r0, err = safe_request("HEAD", base, args.timeout)
+    r0, err = safe_request("HEAD", base, args.timeout, args.user_agent, args.retries, args.jitter)
     if r0 is None:
-        r0, err = safe_request("GET", base, args.timeout)
+        r0, err = safe_request("GET", base, args.timeout, args.user_agent, args.retries, args.jitter)
 
     if r0 is None:
         report = ScanReport(
@@ -246,7 +291,7 @@ def main() -> int:
     declared_ands: Optional[str] = None
     declared_cert: Optional[str] = None
     wk_url = urljoin(base, ".well-known/ands.json")
-    rwk, _ = safe_request("GET", wk_url, args.timeout)
+    rwk, _ = safe_request("GET", wk_url, args.timeout, args.user_agent, args.retries, args.jitter)
     if rwk is not None and rwk.ok:
         try:
             data = rwk.json()
@@ -268,16 +313,28 @@ def main() -> int:
     # OpenAPI hints
     openapi: Optional[Dict[str, Any]] = None
     hints: List[str] = []
-    oa_url = urljoin(base, "openapi.json")
-    roa, _ = safe_request("GET", oa_url, args.timeout)
-    if roa is not None and roa.ok:
-        try:
-            openapi = roa.json()
-            hints = openapi_hints(openapi)
-            evidence.append(Evidence("openapi", f"OpenAPI hints: {', '.join(hints) if hints else 'none'}", 1.2))
-        except Exception:
-            gaps.append("openapi.json present but invalid JSON.")
+    if args.openapi_url:
+        oa_urls = [args.openapi_url]
     else:
+        oa_urls = [
+            urljoin(base, "openapi.json"),
+            urljoin(base, "v1/openapi.json"),
+            urljoin(base, "api/v1/openapi.json"),
+            urljoin(base, "swagger.json")
+        ]
+
+    for oa_url in oa_urls:
+        roa, _ = safe_request("GET", oa_url, args.timeout, args.user_agent, args.retries, args.jitter)
+        if roa is not None and roa.ok:
+            try:
+                openapi = roa.json()
+                hints = openapi_hints(openapi)
+                evidence.append(Evidence("openapi", f"OpenAPI hints from {oa_url}: {', '.join(hints) if hints else 'none'}", 1.2))
+                break
+            except Exception:
+                gaps.append(f"{oa_url} present but invalid JSON.")
+
+    if not openapi:
         gaps.append("No openapi.json found (or not accessible).")
 
     inferred, conf = infer_ands(hints, evidence, gaps)
@@ -293,10 +350,35 @@ def main() -> int:
                 return
             budget -= 1
             full = urljoin(base, path.lstrip("/"))
-            resp, perr = safe_request("GET", full, args.timeout)
-            pr = ProbeResult(url=full, method="GET", status=(resp.status_code if resp is not None else None), note=(perr or ""))
+
+            # Try GET
+            resp, perr = safe_request("GET", full, args.timeout, args.user_agent, args.retries, args.jitter)
+            pr = ProbeResult(
+                url=full,
+                method="GET",
+                status=(resp.status_code if resp is not None else None),
+                headers=(dict(resp.headers) if resp is not None else {}),
+                note=(perr or "")
+            )
             probes.append(pr)
             analyze_probe_status(pr, category, evidence, gaps, recs)
+
+            # Try OPTIONS for dangerous endpoints
+            if category == "dangerous" and budget > 0:
+                budget -= 1
+                oresp, operr = safe_request("OPTIONS", full, args.timeout, args.user_agent, args.retries, args.jitter)
+                if oresp is not None:
+                    opr = ProbeResult(
+                        url=full,
+                        method="OPTIONS",
+                        status=oresp.status_code,
+                        headers=dict(oresp.headers),
+                        note=(operr or "")
+                    )
+                    probes.append(opr)
+                    allow = oresp.headers.get("Allow")
+                    if allow:
+                        evidence.append(Evidence("probe", f"OPTIONS {full} allows: {allow}", 1.0))
 
         for p in targets["safe"]:
             do_probe(p, "safe")
