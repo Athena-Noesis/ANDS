@@ -1,8 +1,0 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.org/ands-1.1.schema.json",
-  "title": "ANDS Code",
-  "type": "string",
-  "pattern": "^\\d+\\.\\d+\\.\\d+\\.\\d+\\.\\d+(\\.\\d+)?$",
-  "description": "ANDS code formatted as C.A.M.G.R or C.A.M.G.R.E (e.g., 2.1.2.3.4 or 2.1.2.3.4.1)"
-}

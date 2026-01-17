@@ -1,0 +1,48 @@
+# ANDS Executive Scorecard: {{ r.target }}
+
+**Risk Level:** {{ r.inferred_ands.split('.')[-1] }} / 5
+**Confidence:** {{ (r.confidence * 100) | round | int }}%
+
+---
+
+## 📊 AI System Posture (C.A.M.G.R)
+
+| Axis | Level | Description | Status |
+| :--- | :---: | :--- | :---: |
+| **Cognition** | {{ r.inferred_ands.split('.')[0] }} | Internal reasoning capability | ℹ️ |
+| **Authority** | {{ r.inferred_ands.split('.')[1] }} | Decision-making autonomy | ℹ️ |
+| **Memory** | {{ r.inferred_ands.split('.')[2] }} | Persistence of data | ℹ️ |
+| **Governance** | {{ r.inferred_ands.split('.')[3] }} | Oversight and control | {{ '✅' if r.inferred_ands.split('.')[3]|int >= 2 else '⚠️' }} |
+| **Risk** | {{ r.inferred_ands.split('.')[4] }} | Potential for negative impact | {{ '🔴' if r.inferred_ands.split('.')[4]|int >= 4 else '🟢' }} |
+
+---
+
+## 🔍 Executive Summary
+
+**Key Findings:**
+{% for e in r.evidence[:3] %}
+- {{ e.finding }}
+{% endfor %}
+
+**Critical Gaps:**
+{% if r.gaps %}
+{% for g in r.gaps[:2] %}
+- {{ g }}
+{% endfor %}
+{% else %}
+- No critical gaps identified.
+{% endif %}
+
+---
+
+## ⚖️ Insurance & Procurement Guidance
+
+{% if r.inferred_ands.split('.')[4]|int >= 4 %}
+**HIGH RISK SYSTEM:** Requires strict AUDITED certification and robust sandboxing before deployment in sensitive environments.
+{% elif r.inferred_ands.split('.')[4]|int >= 3 %}
+**MODERATE RISK SYSTEM:** Recommended for VERIFIED certification. Ensure oversight controls are in place.
+{% else %}
+**LOW RISK SYSTEM:** Standard deployment protocols apply. SELF-attestation is generally sufficient.
+{% endif %}
+
+**Recommendation:** {{ r.recommendations[0] if r.recommendations else "Proceed with standard review." }}
