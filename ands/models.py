@@ -35,3 +35,5 @@ class ScanReport:
     recommendations: List[str]
     probes: List[ProbeResult]
     regulations: Dict[str, str] = None
+    reasoning: List[ReasoningStep] = None
+    environment: Optional[int] = None

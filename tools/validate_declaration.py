@@ -19,6 +19,7 @@ import base64
 import json
 import os
 import sys
+from pathlib import Path
 from typing import Any, Dict
 
 import jcs
@@ -27,9 +28,7 @@ from referencing import Registry, Resource
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-
-SPEC_DIR = os.path.join(os.path.dirname(__file__), "..", "spec")
-SCHEMA_PATH = os.path.join(SPEC_DIR, "well-known-ands.schema.json")
+from ands.utils import SchemaRegistry
 
 
 def canonicalize_for_signing(doc: Dict[str, Any]) -> bytes:
@@ -71,20 +70,25 @@ def main() -> int:
     ap.add_argument("--verify-signature", action="store_true", help="Verify Ed25519 signature in `signed` block")
     args = ap.parse_args()
 
-    with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
-        schema_data = json.load(f)
+    with open(args.path, "r", encoding="utf-8") as f:
+        doc = json.load(f)
+
+    version = doc.get("ands_version", "1.0")
+    try:
+        schema_data = SchemaRegistry.load_schema(version)
+        spec_dir = SchemaRegistry.get_schema_path(version).parent
+    except Exception as e:
+        print(f"Error loading schema for version {version}: {e}")
+        return 1
 
     # Pre-load local schemas into a registry to handle relative $refs
     registry: Registry = Registry()
-    for filename in os.listdir(SPEC_DIR):
+    for filename in os.listdir(spec_dir):
         if filename.endswith(".schema.json"):
-            with open(os.path.join(SPEC_DIR, filename), "r", encoding="utf-8") as f:
+            with open(os.path.join(spec_dir, filename), "r", encoding="utf-8") as f:
                 s = json.load(f)
                 resource = Resource.from_contents(s)
                 registry = registry.with_resource(uri=s.get("$id", filename), resource=resource)
-
-    with open(args.path, "r", encoding="utf-8") as f:
-        doc = json.load(f)
 
     v = Draft202012Validator(schema_data, registry=registry)
     errors = sorted(v.iter_errors(doc), key=lambda e: e.path)

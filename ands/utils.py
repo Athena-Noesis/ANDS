@@ -9,6 +9,7 @@ import ssl
 import sys
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
@@ -22,10 +23,38 @@ from .config import config
 
 DEFAULT_USER_AGENT = config.get("network.user_agent", "ands-scan/1.1")
 MAX_RESPONSE_SIZE = config.get("scanner.max_response_size_mb", 5) * 1024 * 1024
-ANDS_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+\.\d+$")
-SUPPORTED_ANDS_VERSIONS = ["1.0"]
+ANDS_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+\.\d+(\.\d+)?$")
+SUPPORTED_ANDS_VERSIONS = ["1.0", "1.1"]
 
 logger = logging.getLogger("ands")
+
+class SchemaRegistry:
+    """Registry for managing and resolving ANDS schemas by version."""
+
+    @staticmethod
+    def get_schema_path(version: str, schema_name: str = "well-known-ands.schema.json") -> Path:
+        """Resolves the path to a specific schema version."""
+        if version not in SUPPORTED_ANDS_VERSIONS:
+            raise ValueError(f"Unsupported ANDS version: {version}")
+
+        # Check config for custom schema path, fallback to package relative spec/
+        base_path = config.get("general.schema_path")
+        if base_path and Path(base_path).exists():
+            path = Path(base_path) / version / schema_name
+        else:
+            # Fallback to internal spec directory
+            path = Path(__file__).parent.parent / "spec" / version / schema_name
+
+        if not path.exists():
+            raise FileNotFoundError(f"Schema not found at {path}")
+        return path
+
+    @staticmethod
+    def load_schema(version: str, schema_name: str = "well-known-ands.schema.json") -> Dict[str, Any]:
+        """Loads and returns a schema as a dictionary."""
+        path = SchemaRegistry.get_schema_path(version, schema_name)
+        with open(path, "r") as f:
+            return json.load(f)
 
 def normalize_base_url(url: str) -> str:
     url = url.strip()

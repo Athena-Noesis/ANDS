@@ -2,7 +2,21 @@ import base64
 import json
 from typing import Any, Dict, Tuple
 import jcs
+from jsonschema import validate, ValidationError
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from .utils import SchemaRegistry
+
+def validate_schema(doc: Dict[str, Any]) -> Tuple[bool, str]:
+    """Validates the declaration against its specified version's schema."""
+    version = doc.get("ands_version", "1.0")
+    try:
+        schema = SchemaRegistry.load_schema(version)
+        validate(instance=doc, schema=schema)
+        return True, f"Valid ANDS {version} declaration."
+    except ValidationError as e:
+        return False, f"Schema validation failed: {e.message}"
+    except Exception as e:
+        return False, f"Error during validation: {str(e)}"
 
 def verify_declaration_signature(doc: Dict[str, Any]) -> Tuple[bool, str]:
     signed = doc.get("signed")

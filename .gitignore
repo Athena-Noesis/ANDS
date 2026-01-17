@@ -3,6 +3,6 @@ __pycache__/
 *.class
 *.andsz
 *.json
-!spec/*.json
+!spec/**/*.json
 !examples/*.json
 !tests/examples/*.json

@@ -4,20 +4,21 @@ import os
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
+from ands.utils import SchemaRegistry
+
 ROOT = os.path.dirname(os.path.dirname(__file__))
-SPEC_DIR = os.path.join(ROOT, "spec")
-WELL_KNOWN_SCHEMA = os.path.join(SPEC_DIR, "well-known-ands.schema.json")
-EXAMPLE_DECL = os.path.join(SPEC_DIR, "examples", "ands-declaration-example.json")
+EXAMPLE_DECL = os.path.join(ROOT, "spec", "examples", "ands-declaration-example.json")
 
 
 def test_example_declaration_validates():
-    with open(WELL_KNOWN_SCHEMA, "r", encoding="utf-8") as f:
-        schema_data = json.load(f)
+    version = "1.0"
+    schema_data = SchemaRegistry.load_schema(version)
+    spec_dir = SchemaRegistry.get_schema_path(version).parent
 
     registry: Registry = Registry()
-    for filename in os.listdir(SPEC_DIR):
+    for filename in os.listdir(spec_dir):
         if filename.endswith(".schema.json"):
-            with open(os.path.join(SPEC_DIR, filename), "r", encoding="utf-8") as f:
+            with open(os.path.join(spec_dir, filename), "r", encoding="utf-8") as f:
                 s = json.load(f)
                 resource = Resource.from_contents(s)
                 registry = registry.with_resource(uri=s.get("$id", filename), resource=resource)
