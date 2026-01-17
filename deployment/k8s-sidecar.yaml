@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ai-system-with-ands-guard
+spec:
+  containers:
+  - name: ai-app
+    image: my-ai-app:latest
+    ports:
+    - containerPort: 8080
+  - name: ands-guard
+    image: ands-toolkit:latest
+    command: ["python3", "tools/ands_guard.py", "http://localhost:8080", "--max-risk", "3", "--port", "9000"]
+    ports:
+    - containerPort: 9000

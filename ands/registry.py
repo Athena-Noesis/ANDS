@@ -28,8 +28,14 @@ class RegistryStore:
         self.save()
 
 def fire_webhook(url: str, payload: Dict):
-    try: requests.post(url, json=payload, timeout=5)
-    except: pass
+    try:
+        requests.post(url, json=payload, timeout=5)
+        # Check for Slack/Teams specific formats or generic notifications
+        if "slack.com" in url:
+            slack_msg = {"text": f"🚨 *ANDS Drift Alert* for {payload['target']}\nSeverity: {payload['severity']}\nChange: {payload['old_ands']} ➔ {payload['new_ands']}"}
+            requests.post(url, json=slack_msg, timeout=5)
+    except:
+        pass
 
 def background_auditor(store: RegistryStore, webhook_url: Optional[str] = None, interval_secs: int = 86400):
     print(f"[*] Oracle background auditor started (Interval: {interval_secs}s).")

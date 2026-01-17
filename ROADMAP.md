@@ -25,6 +25,11 @@ This document outlines the planned improvements and strategic vision for the Ath
 - **Live Badge API**: A dynamic API linked to the Oracle registry for real-time compliance status display.
 - **Local "Dry Run" Scanner**: A tool for developers to execute within their own network before they publish, suggesting the most accurate ANDS Cognition and Authority scores.
 - **ANDS-to-SBOM Mapping**: Deeply integrate with SBOM standards (like CycloneDX). An ANDS declaration could be treated as a "Compliance SBOM" that sits alongside the "Software SBOM."
+- **Federated Registry (The Oracle Network)**: Allow multiple instances of `ands_registry.py` to sync or "peer" for a global view of AI risk.
+- **"Proof of Compute" Integration**: Incorporate Hardware-level Remote Attestation (Intel SGX, NVIDIA H100) into ANDS signatures for physical assurance.
+- **ANDS for Data**: Apply C.A.M.G.R axes to Training and RAG Datasets to measure "Data Governance" risk.
+- **"Economic Risk" Axis (Insurance Underwriting)**: Calculate Expected Loss (EL) based on live ANDS scores for automated insurance premium adjustments.
+- **The "Red-Team" Scanner**: Automated stress-testing tool that attempts to trigger "Capability Drift" (e.g. executing code when declared as NO-EXEC).
 
 ## 4. Community & Strategic Vision
 - **Community-Driven Probe Library**: Open-source repository for non-invasive AI vulnerability probes.

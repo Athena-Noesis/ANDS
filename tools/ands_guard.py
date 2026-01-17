@@ -110,6 +110,7 @@ def main():
     ap.add_argument("--max-risk", type=int, default=3, help="Maximum allowed Risk (R) axis value")
     ap.add_argument("--port", type=int, default=9000, help="Listen port")
     ap.add_argument("--strict", action="store_true", help="Block if no ANDS declaration present")
+    ap.add_argument("--adaptive", action="store_true", help="Negotiate lower risk settings via system prompts")
     args = ap.parse_args()
 
     server_address = ("", args.port)
