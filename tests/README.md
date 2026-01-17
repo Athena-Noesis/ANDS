@@ -34,28 +34,28 @@ These files allow both manual and automated verification workflows to confirm sc
 
 ## 3. Verification Process
 
-1. **Environment Setup**
-   Ensure all dependencies are installed:
+1. **Environment Setup**  
+   Ensure all dependencies are installed:  
    ```bash
    pip install -r tools/requirements.txt
    ```
 
-2. **Run the Validation Script**
+2. **Run the Validation Script**  
    ```bash
    python tools/validate_declaration.py tests/examples/declaration_valid.json
    ```
 
-3. **Run the Scanner Script**
+3. **Run the Scanner Script**  
    ```bash
    python tools/ands_scan.py tests/examples/declaration_valid.json
    ```
 
-4. **Run the Report Renderer**
+4. **Run the Report Renderer**  
    ```bash
    python tools/render_report.py tests/examples/declaration_valid.json
    ```
 
-5. **Review Results**
+5. **Review Results**  
    Confirm that the outputs align with the expected outcomes listed above.
 
 ---
@@ -94,6 +94,6 @@ A template for this report is provided as `verification_report.md` in the main r
 
 ---
 
-**Maintained by:** Athena Noesis Compliance & Standards Team
-**Version:** 1.0
+**Maintained by:** Athena Noesis Compliance & Standards Team  
+**Version:** 1.0  
 **License:** CC-BY-4.0
