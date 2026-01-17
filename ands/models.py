@@ -41,6 +41,24 @@ class ComplianceReport:
     auditor_overrides: List[Dict[str, Any]] = None
 
 @dataclass
+class SigningRequest:
+    bundle_id: str
+    bundle_hash: str
+    role: str
+    timestamp: str
+    signer_name: Optional[str] = None
+
+@dataclass
+class SignatureBlock:
+    role: str
+    signer: str
+    signature: str
+    timestamp: str
+    key_id: str
+    alg: str = "ed25519"
+    pubkey: Optional[str] = None
+
+@dataclass
 class ScanReport:
     target: str
     reachable: bool

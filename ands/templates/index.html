@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Open Audit Bundle</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Audit Bundle (.andsz)</label>
+                <input type="file" name="file" accept=".andsz" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">Analyze Bundle</button>
+        </form>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Verification Stats</h2>
+        <div class="space-y-2">
+            <p class="text-gray-600">Bundles in session: <span class="font-bold">{{ bundles_count }}</span></p>
+            <p class="text-gray-600">Last scanned: <span class="font-bold">{{ last_timestamp or 'N/A' }}</span></p>
+        </div>
+    </div>
+</div>
+
+{% if bundles %}
+<div class="mt-12">
+    <h2 class="text-2xl font-bold mb-6">Active Bundles</h2>
+    <div class="overflow-x-auto bg-white rounded-lg shadow-md">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signatures</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for b in bundles %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">{{ b.target }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ b.timestamp }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ b.signatures_count }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="/bundle/{{ b.id }}" class="text-indigo-600 hover:text-indigo-900 font-semibold">Manage</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

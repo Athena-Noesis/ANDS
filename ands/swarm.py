@@ -25,10 +25,15 @@ class SwarmScorer:
         g_min = 5
         r_max = 0
         s_sum = 0
+        has_s = False
 
         for r in reports:
-            code = r.get("inferred_ands", "0.0.0.0.0.0")
+            code = r.get("inferred_ands", "0.0.0.0.0")
             parts = [int(p) for p in code.split('.')]
+            if len(parts) >= 6:
+                has_s = True
+
+            # Pad to 6 for internal calculation
             if len(parts) < 6: parts += [0] * (6 - len(parts))
 
             c_sum += parts[0]
@@ -44,6 +49,10 @@ class SwarmScorer:
         m_composite = m_max
         g_composite = g_min
         r_composite = r_max
-        s_composite = min(5, s_sum)
 
-        return f"{c_composite}.{a_composite}.{m_composite}.{g_composite}.{r_composite}.{s_composite}"
+        result = f"{c_composite}.{a_composite}.{m_composite}.{g_composite}.{r_composite}"
+        if has_s:
+            s_composite = min(5, s_sum)
+            result += f".{s_composite}"
+
+        return result

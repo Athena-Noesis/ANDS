@@ -178,8 +178,12 @@ def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, b
                 sig = priv.sign(manifest_bytes)
                 pub = priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
                 signatures.append({
+                    "role": "auto-signer",
+                    "signer": "ands-scanner",
+                    "signature": base64.b64encode(sig).decode('utf-8'),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "key_id": f"ed25519:{base64.b64encode(pub[:8]).decode('utf-8')}",
                     "alg": "ed25519",
-                    "sig": base64.b64encode(sig).decode('utf-8'),
                     "pubkey": base64.b64encode(pub).decode('utf-8')
                 })
             except Exception as e: logger.error(f"Failed to sign bundle with key {k[:8]}: {e}")

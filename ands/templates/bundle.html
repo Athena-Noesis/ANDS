@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <h2 class="text-3xl font-bold text-gray-900">Bundle Details: {{ b.target }}</h2>
+    <a href="/" class="text-gray-500 hover:text-gray-700">&larr; Back to Dashboard</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Left Column: Report Summary -->
+    <div class="lg:col-span-2 space-y-8">
+        <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-indigo-500">
+            <h3 class="text-xl font-bold mb-4 flex justify-between">
+                Scan Overview
+                <span class="text-sm font-normal text-gray-500 italic">ID: {{ b.id }}</span>
+            </h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Inferred ANDS</p>
+                    <p class="text-2xl font-mono font-bold">{{ b.report.inferred_ands }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Confidence</p>
+                    <p class="text-2xl font-bold">{{ (b.report.confidence * 100)|round|int }}%</p>
+                </div>
+            </div>
+            <div class="mt-6">
+                <p class="text-sm text-gray-500 mb-2">Compliance Score ({{ b.report.compliance.framework if b.report.compliance else 'N/A' }})</p>
+                <div class="w-full bg-gray-200 rounded-full h-4">
+                    <div class="bg-green-500 h-4 rounded-full" style="width: {{ (b.report.compliance.overall_score * 100) if b.report.compliance else 0 }}%"></div>
+                </div>
+                <p class="text-right text-sm font-bold mt-1">{{ (b.report.compliance.overall_score * 100)|round|int if b.report.compliance else 0 }}%</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-bold mb-4">Regulatory Checklist</h3>
+            {% if b.report.compliance %}
+            <div class="space-y-4">
+                {% for art in b.report.compliance.articles %}
+                <div class="flex items-start p-3 rounded-md {{ 'bg-green-50' if art.status == 'compliant' else ('bg-yellow-50' if art.status == 'partial' else 'bg-red-50') }}">
+                    <div class="flex-shrink-0 mt-1">
+                        {% if art.status == 'compliant' %} ✅ {% elif art.status == 'partial' %} ⚠️ {% else %} ❌ {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-bold">{{ art.id }}: {{ art.title }}</p>
+                        <p class="text-sm text-gray-600">{{ art.reasoning }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 italic">No compliance data found in bundle.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Signatures & Actions -->
+    <div class="space-y-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-bold mb-4">Signatures</h3>
+            <div class="space-y-4">
+                {% for sig in b.signatures %}
+                <div class="border-b border-gray-100 pb-3">
+                    <div class="flex justify-between items-center">
+                        <span class="px-2 py-1 rounded text-xs font-bold uppercase {{ 'bg-indigo-100 text-indigo-700' if sig.role == 'vendor' else 'bg-green-100 text-green-700' }}">
+                            {{ sig.role }}
+                        </span>
+                        <span class="text-xs text-gray-400 font-mono">{{ sig.timestamp[:10] }}</span>
+                    </div>
+                    <p class="text-sm font-medium mt-1">{{ sig.signer }}</p>
+                    <p class="text-[10px] text-gray-400 font-mono truncate">{{ sig.key_id }}</p>
+                </div>
+                {% endfor %}
+                {% if not b.signatures %}
+                <p class="text-gray-500 italic text-sm text-center">No signatures yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-indigo-50 p-6 rounded-lg shadow-sm border border-indigo-100">
+            <h3 class="text-lg font-bold text-indigo-900 mb-4">Add Signature</h3>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-indigo-700 mb-2">1. Generate Request</p>
+                    <form action="/bundle/{{ b.id }}/request" method="post" class="flex gap-2">
+                        <select name="role" class="block w-full text-sm border-gray-300 rounded-md">
+                            <option value="auditor">Auditor</option>
+                            <option value="vendor">Vendor</option>
+                            <option value="regulator">Regulator</option>
+                        </select>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded text-sm hover:bg-indigo-700">Get JSON</button>
+                    </form>
+                </div>
+                <div class="border-t border-indigo-200 pt-4">
+                    <p class="text-sm text-indigo-700 mb-2">2. Upload Signed JSON</p>
+                    <form action="/bundle/{{ b.id }}/sign" method="post" enctype="multipart/form-data">
+                        <input type="file" name="file" accept=".json" required class="block w-full text-xs text-gray-500 mb-2">
+                        <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded text-sm hover:bg-green-700">Add Signature</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-4">
+            <a href="/bundle/{{ b.id }}/download" class="block w-full text-center border-2 border-gray-300 text-gray-700 py-2 px-4 rounded font-bold hover:bg-gray-50 transition">
+                Download .andsz Bundle
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -23,7 +23,7 @@ This document serves as the definitive development roadmap for the **Athena Noes
 - [x] **Capability Drift Alerting**: Real-time Slack/Webhook notifications from The Oracle.
 - [x] **Local LLM Probes**: Native support for Ollama/vLLM via plugin system.
 - [x] **Standardized Schema Registry**: Reliable local and remote axis resolution.
-- [ ] **Regulatory Mapping Engine v2**: Granular per-Article checklist mode (Planned).
+- [x] **Regulatory Mapping Engine v2**: Granular per-Article checklist mode.
 - [ ] **Multi-Signature Notarization UI**: Web-based interface for collaborative signing (Planned).
 - [ ] **CI/CD Dashboard**: Enhanced PR summaries for risk deltas (Planned).
 
