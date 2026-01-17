@@ -16,14 +16,13 @@ from ands import (
     ScanReport, Evidence, ProbeResult,
     normalize_base_url, get_session, safe_request, check_tls_integrity,
     openapi_hints, pick_probe_paths, analyze_probe_status, infer_ands, create_bundle,
-    map_to_regulations, verify_declaration_signature, logger
+    map_to_regulations, verify_declaration_signature, get_supported_versions, logger
 )
 from ands.config import config
+from ands.schema_migrator import SchemaMigrator
 from ands.swarm import SwarmScorer
 from ands.plugins_engine import load_plugins
 import yaml
-
-SUPPORTED_ANDS_VERSIONS = ["1.0"]
 
 def print_summary(report: ScanReport) -> None:
     out = sys.stderr
@@ -106,8 +105,16 @@ def main() -> int:
         snapshot_files["ands.json"] = rwk.content
         try:
             data = rwk.json()
-            declared_ver = data.get("ands_version")
-            if declared_ver and declared_ver not in SUPPORTED_ANDS_VERSIONS: gaps.append(f"Unsupported version: {declared_ver}")
+            migrator = SchemaMigrator()
+            supported_versions = get_supported_versions()
+            declared_ver = migrator.detect_version(data)
+
+            if declared_ver not in supported_versions:
+                gaps.append(f"Unsupported version: {declared_ver}")
+
+            # Auto-normalize in memory for internal processing
+            data = migrator.normalize(data)
+
             cand = data.get("declared_ands") or data.get("ands")
             declared_cert = data.get("certification_level")
             if isinstance(cand, str):

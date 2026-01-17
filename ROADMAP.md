@@ -12,7 +12,7 @@ This document serves as the definitive development roadmap for the **Athena Noes
 - [x] **Structured Logging**: Moved to standard `logging` framework with `setup_logging`.
 - [x] **Expanded Unit Tests**: Core logic and schema validation covered by `pytest`.
 - [x] **Configuration Management**: Central `ands.config.yaml` for global settings.
-- [ ] **Schema Versioning Logic**: Formal migration paths between standard versions (Planned).
+- [x] **Schema Versioning Logic**: Formal migration paths between standard versions.
 
 ---
 

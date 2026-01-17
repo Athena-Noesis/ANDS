@@ -19,11 +19,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 
 from .models import Evidence
 from .config import config
+from .schema_migrator import SchemaMigrator
 
 DEFAULT_USER_AGENT = config.get("network.user_agent", "ands-scan/1.1")
 MAX_RESPONSE_SIZE = config.get("scanner.max_response_size", 5 * 1024 * 1024)
 ANDS_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+\.\d+$")
-SUPPORTED_ANDS_VERSIONS = ["1.0"]
+
+def get_supported_versions():
+    return SchemaMigrator().get_available_versions()
 
 logger = logging.getLogger("ands")
 

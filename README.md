@@ -18,6 +18,11 @@ ands config init  # Initialize default configuration
 
 ## Quick Start
 
+### 0) Migrate an old declaration
+```bash
+ands migrate path/to/ands.json --to 1.1
+```
+
 ### 1) Publish a declaration (vendors)
 Host a JSON file at:
 - `/.well-known/ands.json`
