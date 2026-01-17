@@ -30,6 +30,9 @@ This document outlines the planned improvements and strategic vision for the Ath
 - **ANDS for Data**: Apply C.A.M.G.R axes to Training and RAG Datasets to measure "Data Governance" risk.
 - **"Economic Risk" Axis (Insurance Underwriting)**: Calculate Expected Loss (EL) based on live ANDS scores for automated insurance premium adjustments.
 - **The "Red-Team" Scanner**: Automated stress-testing tool that attempts to trigger "Capability Drift" (e.g. executing code when declared as NO-EXEC).
+- **Emergent ANDS (Swarm Scoring)**: Scoring Multi-Agent Systems. Calculate "Composite ANDS" for swarms based on topology and shared axes.
+- **Semantic Alignment Probes**: Move beyond network probes into behavioral pressure tests to verify the AI's declared Governance axes.
+- **The Rosetta Stone (Harmonization)**: Universal mapping between ANDS and global standards (ISO, NIST, EU AI Act) for seamless compliance.
 
 ## 4. Community & Strategic Vision
 - **Community-Driven Probe Library**: Open-source repository for non-invasive AI vulnerability probes.

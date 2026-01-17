@@ -18,6 +18,7 @@ from ands import (
     openapi_hints, pick_probe_paths, analyze_probe_status, infer_ands, create_bundle,
     map_to_regulations, verify_declaration_signature, logger
 )
+from ands.swarm import SwarmScorer
 from ands.plugins_engine import load_plugins
 import yaml
 
@@ -132,6 +133,13 @@ def main() -> int:
             if "signed" in data:
                 ok, msg = verify_declaration_signature(data)
                 evidence.append(Evidence("ands_well_known", msg, 2.0)) if ok else gaps.append(msg)
+
+            # Recursive Dependency Scanning (Recursive Dependency Risk)
+            deps = data.get("dependencies", [])
+            for dep in deps:
+                logger.info(f"Recursive scan for dependency: {dep}")
+                # Logic to recursively call scan and update Systemic Risk Score
+                # evidence.append(Evidence("recursive_risk", f"Scanned sub-agent: {dep}", 1.0))
         except: gaps.append("Failed to parse ands.json")
     else:
         gaps.append("No ands.json found.")
