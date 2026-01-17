@@ -33,6 +33,8 @@ This document outlines the planned improvements and strategic vision for the Ath
 - **Emergent ANDS (Swarm Scoring)**: Scoring Multi-Agent Systems. Calculate "Composite ANDS" for swarms based on topology and shared axes.
 - **Semantic Alignment Probes**: Move beyond network probes into behavioral pressure tests to verify the AI's declared Governance axes.
 - **The Rosetta Stone (Harmonization)**: Universal mapping between ANDS and global standards (ISO, NIST, EU AI Act) for seamless compliance.
+- **Governance Discovery Protocol (ANDS-P)**: Implement a ZeroConf/mDNS-based discovery protocol for AI systems to automatically announce their risk profiles.
+- **Active Adaptive Guardians**: Enhance `ands_guard.py` to negotiate safe constraints by injecting real-time axis-downshifting system prompts.
 
 ## 4. Community & Strategic Vision
 - **Community-Driven Probe Library**: Open-source repository for non-invasive AI vulnerability probes.
