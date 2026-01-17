@@ -68,7 +68,11 @@ class Config:
             },
             "validation": {
                 "signature_policy": "all",
-                "quorum": 1
+                "quorum": 1,
+                "thresholds": {
+                    "risk_alert": 1.0,
+                    "axis_drift": 1
+                }
             }
         }
 

@@ -26,7 +26,7 @@ This document serves as the definitive development roadmap for the **Athena Noes
 - [x] **Regulatory Mapping Engine v2**: Granular per-Article checklist mode.
 - [x] **Multi-Signature Notarization**: Core logic and CLI support for collaborative signing.
 - [ ] **Multi-Signature Notarization UI**: Web-based interface for collaborative signing (Planned).
-- [ ] **CI/CD Dashboard**: Enhanced PR summaries for risk deltas (Planned).
+- [x] **CI/CD Dashboard**: Enhanced PR summaries for risk deltas.
 
 ---
 

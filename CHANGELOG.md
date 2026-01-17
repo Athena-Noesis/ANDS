@@ -11,6 +11,8 @@
 - [Added] Multi-Signature Notarization (ANDS 1.2) with role-based signing
 - [Added] `ands sign` CLI for collaborative notarization
 - [Added] Quorum-based signature verification policies
+- [Added] CI/CD Dashboard with rich PR summaries and delta analysis
+- [Added] HTML report generation for CI/CD artifacts
 - [Improved] Refactored `ands-scan` to respect global configuration defaults
 
 ## 1.0.0 (2026-01-13)
