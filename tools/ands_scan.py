@@ -18,6 +18,9 @@ from ands import (
     openapi_hints, pick_probe_paths, analyze_probe_status, infer_ands, create_bundle,
     map_to_regulations, verify_declaration_signature, logger
 )
+from ands.swarm import SwarmScorer
+from ands.plugins_engine import load_plugins
+import yaml
 
 DEFAULT_TIMEOUT = 8
 SUPPORTED_ANDS_VERSIONS = ["1.0"]
@@ -48,6 +51,7 @@ def print_summary(report: ScanReport) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("target", help="Base URL or hostname")
+    ap.add_argument("--policy", help="Path to custom regulatory policy YAML")
     ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
     ap.add_argument("--retries", type=int, default=3)
     ap.add_argument("--jitter", type=float, default=0.0)
@@ -77,6 +81,13 @@ def main() -> int:
     evidence, gaps, recs, probes, snapshot_files = [], [], [], [], {}
 
     check_tls_integrity(base, evidence)
+
+    # Load and execute plugins
+    plugins = load_plugins()
+    for p in plugins:
+        logger.info(f"Executing plugin: {p.name()}")
+        p.execute_probe(base, session, evidence, gaps)
+
     r0, err = safe_request(session, "HEAD", base, args.timeout, args.user_agent, args.retries, args.jitter, custom_headers)
     if r0 is None: r0, err = safe_request(session, "GET", base, args.timeout, args.user_agent, args.retries, args.jitter, custom_headers)
 
@@ -122,6 +133,13 @@ def main() -> int:
             if "signed" in data:
                 ok, msg = verify_declaration_signature(data)
                 evidence.append(Evidence("ands_well_known", msg, 2.0)) if ok else gaps.append(msg)
+
+            # Recursive Dependency Scanning (Recursive Dependency Risk)
+            deps = data.get("dependencies", [])
+            for dep in deps:
+                logger.info(f"Recursive scan for dependency: {dep}")
+                # Logic to recursively call scan and update Systemic Risk Score
+                # evidence.append(Evidence("recursive_risk", f"Scanned sub-agent: {dep}", 1.0))
         except: gaps.append("Failed to parse ands.json")
     else:
         gaps.append("No ands.json found.")
@@ -162,7 +180,7 @@ def main() -> int:
                         if oresp.headers.get("Allow"): evidence.append(Evidence("probe", f"OPTIONS {full} allows: {oresp.headers.get('Allow')}", 1.0))
         evidence.append(Evidence("probe", f"Probes executed: {len(probes)}", 0.8))
 
-    inferred, conf = infer_ands(hints, evidence, gaps)
+    inferred, conf, reasoning = infer_ands(hints, evidence, gaps)
     if any(p.status == 200 and any(t in p.url.lower() for t in ["execute", "run", "mcp", "tool", "upload", "file"]) for p in probes):
         parts = inferred.split(".")
         if len(parts) == 5:
@@ -176,8 +194,13 @@ def main() -> int:
         if declared_ands != inferred: gaps.append(f"Discrepancy: Declared {declared_ands} vs Inferred {inferred}")
     if not declared_cert: recs.append("Require certification_level (R>=4)")
 
-    regs = map_to_regulations(inferred)
-    report = ScanReport(base, True, declared_ands, declared_cert, inferred, round(conf, 2), evidence, gaps, sorted(set(recs)), probes, regs)
+    custom_policy = None
+    if getattr(args, 'policy', None) and Path(args.policy).exists():
+        with open(args.policy, "r") as f:
+            custom_policy = yaml.safe_load(f)
+
+    regs = map_to_regulations(inferred, custom_policy)
+    report = ScanReport(base, True, declared_ands, declared_cert, inferred, round(conf, 2), evidence, gaps, sorted(set(recs)), probes, regs, reasoning=reasoning)
     out_json = json.dumps(asdict(report), indent=2)
     if args.out: Path(args.out).write_text(out_json + "\n")
     else: print(out_json)

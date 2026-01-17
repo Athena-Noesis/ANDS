@@ -3,17 +3,18 @@ import logging
 import zipfile
 import hashlib
 import jcs
+import os
+import base64
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from dataclasses import asdict
 from urllib.parse import urljoin
-import base64
 
 import yaml
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from .models import Evidence, ProbeResult, ScanReport
+from .models import Evidence, ProbeResult, ScanReport, ReasoningStep
 from .utils import safe_request, logger
 
 def openapi_hints(openapi: Dict[str, Any]) -> List[str]:
@@ -43,29 +44,51 @@ def pick_probe_paths(openapi: Optional[Dict[str, Any]]) -> Dict[str, List[str]]:
             danger_hits.append(p)
     return {"safe": safe_hits[:8], "dangerous": (danger_hits[:8] or dangerous_defaults)}
 
-def infer_ands(hints: List[str], evidence_list: List[Evidence], gaps_list: List[str]) -> Tuple[str, float]:
-    C, A, M, G, R = 2, 1, 1, 1, 3
+def infer_ands(hints: List[str], evidence_list: List[Evidence], gaps_list: List[str]) -> Tuple[str, float, List[ReasoningStep]]:
+    C, A, M, G, R, S = 2, 1, 1, 1, 3, 0
+    reasoning = []
     probe_txt = " ".join(e.finding for e in evidence_list if e.source == "probe").lower()
-    if "ai plugin" in probe_txt or "model listing" in probe_txt: C = max(C, 3)
-    if "session/history" in probe_txt: M = max(M, 2)
-    if "policy/governance" in probe_txt: G = max(G, 2)
+
+    # Baseline checks
+    if "ai plugin" in probe_txt or "model listing" in probe_txt:
+        if 3 > C:
+            C = 3
+            reasoning.append(ReasoningStep("C", "3", "AI plugin or model listing detected."))
+    if "session/history" in probe_txt:
+        if 2 > M:
+            M = 2
+            reasoning.append(ReasoningStep("M", "2", "Session or history endpoint detected."))
+    if "policy/governance" in probe_txt:
+        if 2 > G:
+            G = 2
+            reasoning.append(ReasoningStep("G", "2", "Governance markers detected."))
+
+    # Sustainability Hints
+    if any(k in probe_txt for k in ["local", "quantized", "ollama", "edge"]):
+        S = 1
+        reasoning.append(ReasoningStep("S", "1", "Local or optimized runtime detected."))
 
     def add_unique(source, finding, weight):
         if not any(e.source == source and e.finding == finding for e in evidence_list):
             evidence_list.append(Evidence(source, finding, weight))
 
     mapping = {
-        "rbac_surface": (0, 0, 0, 2, 0, "RBAC/permissions indicators found.", 1.5),
-        "audit_or_snapshot_surface": (0, 0, 2, 2, 0, "Audit/provenance/snapshot indicators found.", 1.5),
-        "tool_or_connector_surface": (0, 0, 0, 0, 4, "Tool/connector indicators found (higher risk surface).", 2.0),
-        "file_handling_surface": (0, 0, 0, 0, 4, "File/attachment handling indicators found.", 1.2),
-        "code_execution_surface": (0, 0, 0, 0, 5, "Code execution indicators found (highest risk surface).", 3.0),
+        "rbac_surface": (0, 0, 0, 2, 0, 0, "RBAC/permissions indicators found.", 1.5),
+        "audit_or_snapshot_surface": (0, 0, 2, 2, 0, 0, "Audit/provenance/snapshot indicators found.", 1.5),
+        "tool_or_connector_surface": (0, 0, 0, 0, 4, 0, "Tool/connector indicators found (higher risk surface).", 2.0),
+        "file_handling_surface": (0, 0, 0, 0, 4, 0, "File/attachment handling indicators found.", 1.2),
+        "code_execution_surface": (0, 0, 0, 0, 5, 0, "Code execution indicators found (highest risk surface).", 3.0),
     }
     for h in hints:
         if h in mapping:
             res = mapping[h]
-            C, A, M, G, R = max(C, res[0]), max(A, res[1]), max(M, res[2]), max(G, res[3]), max(R, res[4])
-            add_unique("openapi", res[5], res[6])
+            if res[0] > C: C = res[0]; reasoning.append(ReasoningStep("C", str(C), f"Hint: {h}"))
+            if res[1] > A: A = res[1]; reasoning.append(ReasoningStep("A", str(A), f"Hint: {h}"))
+            if res[2] > M: M = res[2]; reasoning.append(ReasoningStep("M", str(M), f"Hint: {h}"))
+            if res[3] > G: G = res[3]; reasoning.append(ReasoningStep("G", str(G), f"Hint: {h}"))
+            if res[4] > R: R = res[4]; reasoning.append(ReasoningStep("R", str(R), f"Hint: {h}"))
+            if res[5] > S: S = res[5]; reasoning.append(ReasoningStep("S", str(S), f"Hint: {h}"))
+            add_unique("openapi", res[6], res[7])
 
     if "code_execution_surface" in hints:
         msg = "Code execution surface detected; verify sandboxing and explicit human approval controls."
@@ -74,13 +97,17 @@ def infer_ands(hints: List[str], evidence_list: List[Evidence], gaps_list: List[
     pos_weight = sum(e.weight for e in evidence_list)
     gap_penalty = len(gaps_list) * 0.05
     conf = max(0.1, min(0.9, 0.2 + (pos_weight * 0.1) - gap_penalty))
-    return f"{C}.{A}.{M}.{G}.{R}", conf
+    return f"{C}.{A}.{M}.{G}.{R}.{S}", conf, reasoning
 
-def map_to_regulations(ands_code: str) -> Dict[str, str]:
+def map_to_regulations(ands_code: str, custom_policy: Dict[str, Any] = None) -> Dict[str, str]:
     """Map ANDS score to major regulatory frameworks."""
     parts = ands_code.split('.')
-    if len(parts) != 5: return {}
-    C, A, M, G, R = map(int, parts)
+    if len(parts) < 5: return {}
+    try:
+        C, A, M, G, R = map(int, parts[:5])
+        S = int(parts[5]) if len(parts) > 5 else 0
+    except ValueError:
+        return {}
 
     maps = {}
 
@@ -100,6 +127,16 @@ def map_to_regulations(ands_code: str) -> Dict[str, str]:
     elif G >= 2: maps["ISO 42001"] = "PARTIAL (Needs Control alignment)"
     else: maps["ISO 42001"] = "GAP (No AIMS foundation)"
 
+    if S >= 4: maps["Sustainability"] = "HIGH RESOURCE INTENSITY"
+    elif S >= 1: maps["Sustainability"] = "OPTIMIZED"
+
+    if custom_policy:
+        for p_name, p_rules in custom_policy.items():
+            if "R_limit" in p_rules and R > p_rules["R_limit"]:
+                maps[p_name] = f"NON-COMPLIANT (R={R} > {p_rules['R_limit']})"
+            else:
+                maps[p_name] = "COMPLIANT"
+
     return maps
 
 def analyze_probe_status(pr: ProbeResult, category: str, evidence: List[Evidence], gaps: List[str], recs: List[str]) -> None:
@@ -110,7 +147,16 @@ def analyze_probe_status(pr: ProbeResult, category: str, evidence: List[Evidence
     found_sec = [label for h, label in sec_headers.items() if any(h.lower() == k.lower() for k in pr.headers.keys())]
     if found_sec: evidence.append(Evidence("probe", f"Security headers found on {pr.url}: {', '.join(found_sec)}", 0.5))
 
-    path_hints = [("ai-plugin.json", "AI Plugin manifest found.", 2.5), ("/v1/models", "Model listing endpoint reachable.", 1.5), ("/v1/sessions", "Session/History endpoint reachable (Memory marker).", 2.0), ("/privacy", "Policy documentation found.", 1.0), ("security.txt", "security.txt found.", 1.0)]
+    path_hints = [
+        ("ai-plugin.json", "AI Plugin manifest found.", 2.5),
+        ("/v1/models", "Model listing endpoint reachable.", 1.5),
+        ("/v1/sessions", "Session/History endpoint reachable (Memory marker).", 2.0),
+        ("/privacy", "Policy documentation found.", 1.0),
+        ("security.txt", "security.txt found.", 1.0),
+        ("/.well-known/mcp", "MCP server capability detected.", 2.0),
+        ("vllm", "vLLM Inference Engine fingerprint detected.", 1.5),
+        ("ollama", "Ollama Local Runtime fingerprint detected.", 1.5)
+    ]
     for p, f, w in path_hints:
         if pr.status == 200 and p in pr.url: evidence.append(Evidence("probe", f, w))
 

@@ -14,17 +14,18 @@ class TestAndsScanCore(unittest.TestCase):
         hints = []
         evidence = []
         gaps = []
-        ands, conf = infer_ands(hints, evidence, gaps)
-        self.assertEqual(ands, "2.1.1.1.3")
+        ands, conf, reasoning = infer_ands(hints, evidence, gaps)
+        self.assertEqual(ands, "2.1.1.1.3.0")
         self.assertAlmostEqual(conf, 0.2)
 
     def test_infer_ands_with_hints(self):
         hints = ["rbac_surface", "code_execution_surface"]
         evidence = []
         gaps = []
-        ands, conf = infer_ands(hints, evidence, gaps)
-        # R should be 5 for code execution
-        self.assertTrue(ands.endswith(".5"))
+        ands, conf, reasoning = infer_ands(hints, evidence, gaps)
+        # R should be 5 for code execution (in 5th position)
+        parts = ands.split('.')
+        self.assertEqual(parts[4], "5")
         # G should be 2 for rbac
         self.assertEqual(ands.split(".")[3], "2")
         # Evidence should have been added

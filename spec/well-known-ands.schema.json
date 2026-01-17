@@ -92,6 +92,16 @@
         }
       },
       "additionalProperties": true
+    },
+    "auditor_confirmation": {
+      "type": "object",
+      "description": "Optional block for human auditor confirmation",
+      "properties": {
+        "auditor_id": { "type": "string" },
+        "confirmed_at": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" },
+        "override_ands": { "$ref": "./ands.schema.json" }
+      }
     }
   },
   "additionalProperties": true
