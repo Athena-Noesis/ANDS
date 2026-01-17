@@ -23,6 +23,24 @@ class ReasoningStep:
     reason: str
 
 @dataclass
+class ComplianceArticle:
+    id: str
+    title: str
+    status: str  # compliant, partial, non_compliant
+    score: float
+    description: Optional[str] = None
+    reasoning: Optional[str] = None
+    manual_override: bool = False
+
+@dataclass
+class ComplianceReport:
+    framework: str
+    version: str
+    overall_score: float
+    articles: List[ComplianceArticle]
+    auditor_overrides: List[Dict[str, Any]] = None
+
+@dataclass
 class ScanReport:
     target: str
     reachable: bool
@@ -36,3 +54,4 @@ class ScanReport:
     probes: List[ProbeResult]
     regulations: Dict[str, str] = None
     reasoning: List[ReasoningStep] = None
+    compliance: Optional[ComplianceReport] = None

@@ -192,3 +192,9 @@ def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, b
         for name, content in evidence_files.items():
             zf.writestr(f"evidence/{name}", content)
     logger.info(f"Audit bundle created: {bundle_path} ({len(signatures)} sigs)")
+
+def main():
+    # Placeholder for the CLI main function if needed within the module
+    # In this project, tools/ands_scan.py usually contains the CLI logic
+    from tools.ands_scan import main as tools_main
+    return tools_main()

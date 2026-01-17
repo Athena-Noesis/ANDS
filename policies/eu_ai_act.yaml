@@ -1,0 +1,84 @@
+framework: "EU AI Act"
+version: "2.0"
+articles:
+  "9":
+    title: "Risk Management"
+    description: "AI systems must implement and document continuous risk management."
+    axes: ["R"]
+    logic: "R <= 3"
+    severity: "critical"
+    thresholds:
+      compliant: "R <= 3"
+      partial: "R == 4"
+      non_compliant: "R >= 5"
+
+  "10":
+    title: "Data Governance"
+    description: "Training, validation, and testing data must be relevant, representative, and free of bias."
+    axes: ["M", "E"]
+    logic: "M <= 3 and E <= 3"
+    thresholds:
+      compliant: "M <= 3 and E <= 3"
+      partial: "M == 4 or E == 4"
+      non_compliant: "M >= 5 or E >= 5"
+
+  "11":
+    title: "Technical Documentation"
+    description: "Documentation must demonstrate compliance and be kept up to date."
+    axes: ["G"]
+    logic: "G >= 3"
+    thresholds:
+      compliant: "G >= 3"
+      partial: "G == 2"
+      non_compliant: "G <= 1"
+
+  "12":
+    title: "Record-Keeping"
+    description: "Automatic recording of events (logs) over the lifetime of the system."
+    axes: ["M", "G"]
+    logic: "M >= 2 and G >= 2"
+    thresholds:
+      compliant: "M >= 2 and G >= 2"
+      partial: "(M >= 2 and G < 2) or (M < 2 and G >= 2)"
+      non_compliant: "M < 2 and G < 2"
+
+  "13":
+    title: "Transparency"
+    description: "Users must be able to interpret system behavior and decision boundaries."
+    axes: ["C", "A", "G"]
+    logic: "G >= 3 and A <= 3 and C >= 2"
+    dependencies: ["11"]
+    thresholds:
+      compliant: "G >= 3 and A <= 3 and C >= 2"
+      partial: "A == 4 or G == 2"
+      non_compliant: "A >= 5 or G <= 1 or C < 2"
+
+  "14":
+    title: "Human Oversight"
+    description: "Human operators must retain meaningful control."
+    axes: ["A", "G"]
+    logic: "A <= 3 and G >= 2"
+    thresholds:
+      compliant: "A <= 3 and G >= 2"
+      partial: "A == 4"
+      non_compliant: "A >= 5 or G <= 1"
+
+  "15":
+    title: "Robustness & Accuracy"
+    description: "Looks for control of uncertainty and environmental stability."
+    axes: ["C", "M", "E"]
+    logic: "C <= 3 and M <= 3 and E <= 3"
+    thresholds:
+      compliant: "C <= 3 and M <= 3 and E <= 3"
+      partial: "C == 4 or M == 4 or E == 4"
+      non_compliant: "C >= 5 or M >= 5 or E >= 5"
+
+  "16":
+    title: "Post-Market Monitoring"
+    description: "Ongoing assurance of safety and performance."
+    axes: ["G", "R"]
+    logic: "G >= 3 and R <= 3"
+    thresholds:
+      compliant: "G >= 3 and R <= 3"
+      partial: "G < 3 or R > 3"
+      non_compliant: "G <= 1 or R >= 5"
