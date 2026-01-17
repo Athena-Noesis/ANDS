@@ -37,3 +37,4 @@ class ScanReport:
     regulations: Dict[str, str] = None
     reasoning: List[ReasoningStep] = None
     environment: Optional[int] = None
+    compliance_summary: Dict[str, Any] = None

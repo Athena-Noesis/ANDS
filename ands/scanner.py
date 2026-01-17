@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from .models import Evidence, ProbeResult, ScanReport, ReasoningStep
 from .utils import safe_request, logger
+from .rosetta import RosettaEngine
 
 def openapi_hints(openapi: Dict[str, Any]) -> List[str]:
     txt = json.dumps(openapi).lower()
@@ -100,44 +101,35 @@ def infer_ands(hints: List[str], evidence_list: List[Evidence], gaps_list: List[
     return f"{C}.{A}.{M}.{G}.{R}.{S}", conf, reasoning
 
 def map_to_regulations(ands_code: str, custom_policy: Dict[str, Any] = None) -> Dict[str, str]:
-    """Map ANDS score to major regulatory frameworks."""
+    """Map ANDS score to major regulatory frameworks using RosettaEngine."""
+    engine = RosettaEngine()
+    declaration = {"declared_ands": ands_code}
+    results = engine.evaluate(declaration)
+
+    # Maintain backward compatibility for the simple Dict[str, str] mapping
+    legacy_maps = {}
+    for fw_key, fw_data in results.items():
+        fw_name = fw_data["framework"]
+        compliant_count = sum(1 for art in fw_data["articles"].values() if art["status"] == "Compliant")
+        total_count = len(fw_data["articles"])
+
+        if compliant_count == total_count:
+            legacy_maps[fw_name] = "COMPLIANT"
+        elif compliant_count == 0:
+            legacy_maps[fw_name] = "NON-COMPLIANT"
+        else:
+            legacy_maps[fw_name] = f"PARTIAL ({compliant_count}/{total_count})"
+
+    # Override with logic from scanner v1 for high-level classification if needed
+    # (Optional: we can keep the nuanced v1 mapping as fallback/augmentation)
     parts = ands_code.split('.')
-    if len(parts) < 5: return {}
-    try:
-        C, A, M, G, R = map(int, parts[:5])
-        S = int(parts[5]) if len(parts) > 5 else 0
-    except ValueError:
-        return {}
+    if len(parts) >= 5:
+        try:
+            C, A, M, G, R = map(int, parts[:5])
+            if R == 5: legacy_maps["EU AI Act"] = "PROHIBITED (Unacceptable Risk)"
+        except: pass
 
-    maps = {}
-
-    # EU AI Act (Approximation)
-    if R == 5: maps["EU AI Act"] = "PROHIBITED (Unacceptable Risk)"
-    elif R >= 4 or A >= 4: maps["EU AI Act"] = "HIGH RISK (Annex III)"
-    elif C >= 3: maps["EU AI Act"] = "GENERAL PURPOSE AI (Limited Risk)"
-    else: maps["EU AI Act"] = "MINIMAL RISK"
-
-    # NIST AI RMF
-    if G <= 2: maps["NIST AI RMF"] = "NON-COMPLIANT (Govern/Map failure)"
-    elif R >= 4: maps["NIST AI RMF"] = "HIGH EXPOSURE (Requires Measure/Manage)"
-    else: maps["NIST AI RMF"] = "RESILIENT"
-
-    # ISO/IEC 42001 (AIMS)
-    if G >= 4: maps["ISO 42001"] = "READY (Mature Governance)"
-    elif G >= 2: maps["ISO 42001"] = "PARTIAL (Needs Control alignment)"
-    else: maps["ISO 42001"] = "GAP (No AIMS foundation)"
-
-    if S >= 4: maps["Sustainability"] = "HIGH RESOURCE INTENSITY"
-    elif S >= 1: maps["Sustainability"] = "OPTIMIZED"
-
-    if custom_policy:
-        for p_name, p_rules in custom_policy.items():
-            if "R_limit" in p_rules and R > p_rules["R_limit"]:
-                maps[p_name] = f"NON-COMPLIANT (R={R} > {p_rules['R_limit']})"
-            else:
-                maps[p_name] = "COMPLIANT"
-
-    return maps
+    return legacy_maps
 
 def analyze_probe_status(pr: ProbeResult, category: str, evidence: List[Evidence], gaps: List[str], recs: List[str]) -> None:
     if pr.status is None:
