@@ -18,9 +18,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from .models import Evidence
+from .config import config
 
-DEFAULT_USER_AGENT = "ands-scan/1.1"
-MAX_RESPONSE_SIZE = 5 * 1024 * 1024  # 5MB
+DEFAULT_USER_AGENT = config.get("network.user_agent", "ands-scan/1.1")
+MAX_RESPONSE_SIZE = config.get("scanner.max_response_size_mb", 5) * 1024 * 1024
 ANDS_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+\.\d+$")
 SUPPORTED_ANDS_VERSIONS = ["1.0"]
 
@@ -35,12 +36,17 @@ def normalize_base_url(url: str) -> str:
     return url
 
 def get_session(
-    retries: int = 3,
+    retries: Optional[int] = None,
     proxy: Optional[str] = None,
     cert: Optional[str] = None,
     key: Optional[str] = None,
     cacert: Optional[str] = None
 ) -> requests.Session:
+    if retries is None:
+        retries = config.get("network.retries", 3)
+    if proxy is None:
+        proxy = config.get("network.proxy")
+
     s = requests.Session()
     if proxy:
         s.proxies = {"http": proxy, "https": proxy}
@@ -54,12 +60,18 @@ def safe_request(
     session: requests.Session,
     method: str,
     url: str,
-    timeout: int,
-    user_agent: str = DEFAULT_USER_AGENT,
-    retries: int = 3,
+    timeout: Optional[int] = None,
+    user_agent: Optional[str] = None,
+    retries: Optional[int] = None,
     jitter: float = 0.0,
     headers: Optional[Dict[str, str]] = None
 ) -> Tuple[Optional[requests.Response], Optional[str]]:
+    if timeout is None:
+        timeout = config.get("network.timeout", 20)
+    if user_agent is None:
+        user_agent = config.get("network.user_agent", DEFAULT_USER_AGENT)
+    if retries is None:
+        retries = config.get("network.retries", 3)
     last_err = "UNKNOWN"
     merged_headers = {"User-Agent": user_agent}
     if headers:

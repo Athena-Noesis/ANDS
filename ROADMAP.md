@@ -11,7 +11,7 @@ This document serves as the definitive development roadmap for the **Athena Noes
 - [x] **Unified CLI**: Integrated all tools under a single `ands` command.
 - [x] **Structured Logging**: Moved to standard `logging` framework with `setup_logging`.
 - [x] **Expanded Unit Tests**: Core logic and schema validation covered by `pytest`.
-- [ ] **Configuration Management**: Central `ands.config.yaml` for global settings (Planned).
+- [x] **Configuration Management**: Central `ands.config.yaml` for global settings.
 - [ ] **Schema Versioning Logic**: Formal migration paths between standard versions (Planned).
 
 ---

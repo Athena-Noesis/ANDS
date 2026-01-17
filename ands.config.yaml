@@ -1,0 +1,26 @@
+general:
+  cache_dir: ~/.ands/cache
+  default_language: en
+  schema_path: ./schemas
+  version: 1.0
+logging:
+  level: INFO
+  log_file: ~/.ands/logs/ands.log
+network:
+  proxy: null
+  retries: 3
+  retry_backoff: 2.0
+  timeout: 42
+  user_agent: ANDS-Scanner/1.0
+scanner:
+  default_openapi_paths:
+  - openapi.json
+  - v1/openapi.json
+  - api/v1/openapi.json
+  max_response_size_mb: 5
+  signature_algorithm: ed25519
+security:
+  ca_bundle: null
+  private_key: ~/.ands/keys/auditor.key
+  public_key: ~/.ands/keys/auditor.pub
+  verify_ssl: true

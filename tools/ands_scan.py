@@ -18,11 +18,11 @@ from ands import (
     openapi_hints, pick_probe_paths, analyze_probe_status, infer_ands, create_bundle,
     map_to_regulations, verify_declaration_signature, logger
 )
+from ands.config import config
 from ands.swarm import SwarmScorer
 from ands.plugins_engine import load_plugins
 import yaml
 
-DEFAULT_TIMEOUT = 8
 SUPPORTED_ANDS_VERSIONS = ["1.0"]
 
 def print_summary(report: ScanReport) -> None:
@@ -52,12 +52,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("target", help="Base URL or hostname")
     ap.add_argument("--policy", help="Path to custom regulatory policy YAML")
-    ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
-    ap.add_argument("--retries", type=int, default=3)
+    ap.add_argument("--timeout", type=int, default=config.get("network.timeout", 20))
+    ap.add_argument("--retries", type=int, default=config.get("network.retries", 3))
     ap.add_argument("--jitter", type=float, default=0.0)
-    ap.add_argument("--user-agent", default="ands-scan/1.1")
+    ap.add_argument("--user-agent", default=config.get("network.user_agent", "ands-scan/1.1"))
     ap.add_argument("-H", "--header", action="append")
-    ap.add_argument("--proxy")
+    ap.add_argument("--proxy", default=config.get("network.proxy"))
     ap.add_argument("--cert")
     ap.add_argument("--key")
     ap.add_argument("--cacert")
@@ -145,7 +145,8 @@ def main() -> int:
         gaps.append("No ands.json found.")
         recs.append("Publish /.well-known/ands.json")
 
-    oa_urls = [args.openapi_url] if args.openapi_url else [urljoin(base, p) for p in ["openapi.json", "openapi.yaml", "openapi.yml", "swagger.json"]]
+    default_openapi = config.get("scanner.default_openapi_paths", ["openapi.json", "openapi.yaml", "openapi.yml", "swagger.json"])
+    oa_urls = [args.openapi_url] if args.openapi_url else [urljoin(base, p) for p in default_openapi]
     openapi, hints = None, []
     for oa_url in oa_urls:
         roa, _ = safe_request(session, "GET", oa_url, args.timeout, args.user_agent, args.retries, args.jitter, custom_headers)
