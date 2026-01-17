@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*.class
+*.andsz
+*.json
+!spec/*.json
+!examples/*.json
+!tests/examples/*.json

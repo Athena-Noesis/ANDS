@@ -28,8 +28,8 @@ ANDS_DECLARATION = {
     "contact": "security@ands.example.org",
     "signed": {
         "alg": "ed25519",
-        "sig": "PteBK1XAtcvwhUswHRMH5fMjnziHjmgl7xkboYGbDH8TZcmByM++sPTA3GYCH/1CDKVwkOArM30kBQGWGB7hDw==",
-        "pubkey": "BjgLLJzo7IzKVc3wtMxrh2oXQZ30dv7GMWn5o1nlI/w="
+        "sig": "ROXBMKpXOkXvZnni4weSKacus2FCwzSFIH1YZPCLWMsWZLpxKToOXomS7MtPEJy6ovwZUDFxsNX3q187uXkbCA==",
+        "pubkey": "kghF8Z/6eGGig4PkOzWbhZaByPM4E8ssTg15EEQ4aFQ="
     }
 }
 
