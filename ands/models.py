@@ -17,6 +17,12 @@ class ProbeResult:
     note: str
 
 @dataclass
+class ReasoningStep:
+    axis: str
+    impact: str
+    reason: str
+
+@dataclass
 class ScanReport:
     target: str
     reachable: bool
