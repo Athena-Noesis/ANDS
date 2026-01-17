@@ -29,6 +29,7 @@ from referencing import Registry, Resource
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ands.utils import SchemaRegistry
+from ands.validator import validate_schema as validate_ands_schema
 
 
 def canonicalize_for_signing(doc: Dict[str, Any]) -> bytes:
@@ -73,31 +74,10 @@ def main() -> int:
     with open(args.path, "r", encoding="utf-8") as f:
         doc = json.load(f)
 
-    version = doc.get("ands_version", "1.0")
-    try:
-        schema_data = SchemaRegistry.load_schema(version)
-        spec_dir = SchemaRegistry.get_schema_path(version).parent
-    except Exception as e:
-        print(f"Error loading schema for version {version}: {e}")
-        return 1
-
-    # Pre-load local schemas into a registry to handle relative $refs
-    registry: Registry = Registry()
-    for filename in os.listdir(spec_dir):
-        if filename.endswith(".schema.json"):
-            with open(os.path.join(spec_dir, filename), "r", encoding="utf-8") as f:
-                s = json.load(f)
-                resource = Resource.from_contents(s)
-                registry = registry.with_resource(uri=s.get("$id", filename), resource=resource)
-
-    v = Draft202012Validator(schema_data, registry=registry)
-    errors = sorted(v.iter_errors(doc), key=lambda e: e.path)
-
-    if errors:
+    ok, msg = validate_ands_schema(doc)
+    if not ok:
         print("INVALID")
-        for e in errors:
-            loc = ".".join([str(x) for x in e.path]) if e.path else "<root>"
-            print(f"- {loc}: {e.message}")
+        print(f"- {msg}")
         return 2
 
     if args.verify_signature:

@@ -24,7 +24,7 @@ from .config import config
 DEFAULT_USER_AGENT = config.get("network.user_agent", "ands-scan/1.1")
 MAX_RESPONSE_SIZE = config.get("scanner.max_response_size_mb", 5) * 1024 * 1024
 ANDS_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+\.\d+(\.\d+)?$")
-SUPPORTED_ANDS_VERSIONS = ["1.0", "1.1"]
+SUPPORTED_ANDS_VERSIONS = ["1.0", "1.1", "1.2"]
 
 logger = logging.getLogger("ands")
 

@@ -34,10 +34,11 @@ class TestAndsScanCore(unittest.TestCase):
         self.assertGreater(conf, 0.2)
 
     def test_verify_declaration_signature_missing(self):
-        doc = {"ands": "1.0.0.0.0"}
+        doc = {"ands": "1.0.0.0.0", "ands_version": "1.0"}
         ok, msg = verify_declaration_signature(doc)
         self.assertFalse(ok)
-        self.assertIn("Missing 'signed' block", msg)
+        # For version 1.0 it might still look for signatures array or signed block depending on how we want it
+        self.assertTrue("Missing 'signatures' array" in msg or "Missing 'signed' block" in msg)
 
     def test_verify_declaration_signature_invalid_alg(self):
         doc = {

@@ -24,3 +24,6 @@ security:
   private_key: ~/.ands/keys/auditor.key
   public_key: ~/.ands/keys/auditor.pub
   verify_ssl: true
+validation:
+  quorum: 1
+  signature_policy: all

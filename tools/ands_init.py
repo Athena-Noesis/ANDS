@@ -35,15 +35,20 @@ def get_choice(prompt: str, choices: List[str], default: str) -> str:
         print("Invalid selection.")
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(prog="ands init")
+    ap.add_argument("--multi", action="store_true", help="Initialize for multiple signers")
+    args_cli = ap.parse_args(sys.argv[1:])
+
     print("====================================================")
-    print("   ANDS DECLARATION WIZARD (v1.0)")
+    print("   ANDS DECLARATION WIZARD (v1.2)")
     print("====================================================\n")
     print("This tool will guide you through creating a compliant")
     print("/.well-known/ands.json file for your AI system.\n")
 
     # Basic Info
     system_id = get_input("System ID (e.g., vendor.product)", "my-org.ai-v1")
-    ands_ver = "1.0"
+    ands_ver = "1.2"
     cert_level = get_choice("Certification Level", ["SELF", "VERIFIED", "AUDITED"], "SELF")
 
     # ANDS Code
@@ -83,6 +88,22 @@ def main():
             "code_execution": cap_code
         }
     }
+
+    if args_cli.multi:
+        doc["signatures"] = []
+        print("\n--- MULTI-SIGNER INITIALIZATION ---")
+        while True:
+            role = get_choice("Role for next signer", ["vendor", "auditor", "legal", "regulator"], "vendor")
+            name = get_input("Signer Name/Organization")
+            doc["signatures"].append({
+                "role": role,
+                "signer": name,
+                "sig": None,
+                "alg": "ed25519",
+                "pubkey": None
+            })
+            if get_input("Add another expected signer? (y/n)", "n").lower() != 'y':
+                break
     if attest_list:
         doc["attestation_urls"] = attest_list
     if contact:
@@ -90,15 +111,18 @@ def main():
 
     # Signing
     print("\n--- SIGNING ---")
-    do_sign = get_input("Sign this declaration? (y/n)", "y").lower().startswith('y')
+    do_sign = get_input("Sign this declaration now? (y/n)", "y").lower().startswith('y')
 
     if do_sign:
+        role = "vendor"
+        if args_cli.multi:
+            role = get_choice("Signing as which role?", [s["role"] for s in doc["signatures"]], doc["signatures"][0]["role"] if doc["signatures"] else "vendor")
+
         key_choice = get_choice("Key Selection", ["Generate new Ed25519 key pair", "Use existing private key (Base64)"], "Generate new Ed25519 key pair")
 
         priv = None
         if "Generate" in key_choice:
             priv = Ed25519PrivateKey.generate()
-            # Export for user
             priv_b64 = base64.b64encode(priv.private_bytes(
                 encoding=serialization.Encoding.Raw,
                 format=serialization.PrivateFormat.Raw,
@@ -121,17 +145,37 @@ def main():
             format=serialization.PublicFormat.Raw
         )).decode('utf-8')
 
-        # Canonicalize and Sign
-        msg = jcs.canonicalize(doc)
+        # Canonicalize and Sign (Multi-sig format)
+        doc_to_sign = dict(doc)
+        doc_to_sign.pop("signatures", None)
+        msg = jcs.canonicalize(doc_to_sign)
         sig = priv.sign(msg)
         sig_b64 = base64.b64encode(sig).decode('utf-8')
 
-        doc["signed"] = {
-            "alg": "ed25519",
+        sig_obj = {
+            "role": role,
+            "signer": system_id,
             "sig": sig_b64,
-            "pubkey": pub_b64
+            "alg": "ed25519",
+            "pubkey": pub_b64,
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        print("\nDeclaration signed successfully.")
+
+        if "signatures" not in doc:
+            doc["signatures"] = []
+
+        # Replace placeholder if exists
+        found_placeholder = False
+        for i, s in enumerate(doc["signatures"]):
+            if s["role"] == role and s["sig"] is None:
+                doc["signatures"][i] = sig_obj
+                found_placeholder = True
+                break
+
+        if not found_placeholder:
+            doc["signatures"].append(sig_obj)
+
+        print(f"\nDeclaration signed successfully as {role}.")
 
     # Save
     out_path = "ands.json"

@@ -8,6 +8,9 @@
 - [Added] Environment (E) axis support in ANDS 1.1
 - [Added] Regulatory Mapping Engine v2 with data-driven YAML policies
 - [Added] `ands rosetta checklist` command for article-level auditing
+- [Added] Multi-Signature Notarization (ANDS 1.2) with role-based signing
+- [Added] `ands sign` CLI for collaborative notarization
+- [Added] Quorum-based signature verification policies
 - [Improved] Refactored `ands-scan` to respect global configuration defaults
 
 ## 1.0.0 (2026-01-13)

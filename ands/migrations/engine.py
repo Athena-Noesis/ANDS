@@ -1,8 +1,9 @@
 from typing import Any, Dict, List
-from . import m1_0_to_1_1
+from . import m1_0_to_1_1, m1_1_to_1_2
 
 MIGRATIONS = {
     ("1.0", "1.1"): m1_0_to_1_1.migrate,
+    ("1.1", "1.2"): m1_1_to_1_2.migrate,
 }
 
 class MigrationEngine:
@@ -30,8 +31,9 @@ class MigrationEngine:
             if not found:
                 raise ValueError(f"No migration path from {current_version} to {target_version}")
 
-        # Invalidate signature after migration
-        if "signed" in doc:
-            doc.pop("signed")
+        # Invalidate single signature if migrating to 1.1 or lower
+        if target_version < "1.2":
+            if "signed" in doc:
+                doc.pop("signed")
 
         return doc

@@ -65,6 +65,10 @@ class Config:
                 ],
                 "max_response_size_mb": 5,
                 "signature_algorithm": "ed25519"
+            },
+            "validation": {
+                "signature_policy": "all",
+                "quorum": 1
             }
         }
 
