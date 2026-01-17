@@ -30,11 +30,14 @@ This document outlines the planned improvements and strategic vision for the Ath
 - **ANDS for Data**: Apply C.A.M.G.R axes to Training and RAG Datasets to measure "Data Governance" risk.
 - **"Economic Risk" Axis (Insurance Underwriting)**: Calculate Expected Loss (EL) based on live ANDS scores for automated insurance premium adjustments.
 - **The "Red-Team" Scanner**: Automated stress-testing tool that attempts to trigger "Capability Drift" (e.g. executing code when declared as NO-EXEC).
+- **Cascading Risk Analysis**: Automated mapping of AI dependencies via SBOMs/Attestations to identify upstream "Risk Hiding" (e.g. R=1 relying on R=5).
 - **Emergent ANDS (Swarm Scoring)**: Scoring Multi-Agent Systems. Calculate "Composite ANDS" for swarms based on topology and shared axes.
 - **Semantic Alignment Probes**: Move beyond network probes into behavioral pressure tests to verify the AI's declared Governance axes.
 - **The Rosetta Stone (Harmonization)**: Universal mapping between ANDS and global standards (ISO, NIST, EU AI Act) for seamless compliance.
 - **Governance Discovery Protocol (ANDS-P)**: Implement a ZeroConf/mDNS-based discovery protocol for AI systems to automatically announce their risk profiles.
 - **Active Adaptive Guardians**: Enhance `ands_guard.py` to negotiate safe constraints by injecting real-time axis-downshifting system prompts.
+- **ANDS CI/CD Health Dashboard**: Markdown-based summary generator for Pull Requests showing ANDS axis deltas (e.g. "This PR increases Authority from 2 to 3").
+- **Multi-Stakeholder Notarization UI**: Web-based wizard for multiple auditors to review evidence bundles and append cryptographic signatures.
 
 ## 4. Community & Strategic Vision
 - **Community-Driven Probe Library**: Open-source repository for non-invasive AI vulnerability probes.
