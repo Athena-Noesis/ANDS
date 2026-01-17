@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ands-toolkit"
+version = "1.0.0"
+description = "Athena Noesis Decimal System (ANDS) toolkit for AI system classification and risk auditing."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "CC-BY-4.0"}
+dependencies = [
+    "requests>=2.31.0",
+    "jsonschema>=4.21.0",
+    "jinja2>=3.1.0",
+    "cryptography>=42.0.0",
+    "referencing>=0.30.0",
+    "jcs>=0.2.1",
+    "PyYAML>=6.0.0",
+    "segno>=1.6.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "python-multipart>=0.0.9"
+]
+
+[project.scripts]
+ands-scan = "tools.ands_scan:main"
+ands-validate = "tools.validate_declaration:main"
+ands-init = "tools.ands_init:main"
+ands-badge = "tools.ands_badge:main"
+ands-guard = "tools.ands_guard:main"
+ands-mcp = "tools.ands_mcp:main"
+ands-dry-run = "tools.ands_dry_run:main"
+ands-sbom-gen = "tools.ands_sbom_gen:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ands*", "tools*"]

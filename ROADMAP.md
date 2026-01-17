@@ -23,6 +23,8 @@ This document outlines the planned improvements and strategic vision for the Ath
 - **Evidence Persistence**: Enhance snapshotting and archiving of harvested evidence in `.andsz` bundles.
 - **GUI / Web Interface**: Build an interactive, user-friendly interface for the Registry and Wizard in `ands_portal.py`.
 - **Live Badge API**: A dynamic API linked to the Oracle registry for real-time compliance status display.
+- **Local "Dry Run" Scanner**: A tool for developers to execute within their own network before they publish, suggesting the most accurate ANDS Cognition and Authority scores.
+- **ANDS-to-SBOM Mapping**: Deeply integrate with SBOM standards (like CycloneDX). An ANDS declaration could be treated as a "Compliance SBOM" that sits alongside the "Software SBOM."
 
 ## 4. Community & Strategic Vision
 - **Community-Driven Probe Library**: Open-source repository for non-invasive AI vulnerability probes.
