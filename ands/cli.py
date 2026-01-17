@@ -1,7 +1,7 @@
 import argparse
 import sys
 from tools import ands_scan, validate_declaration, ands_init, ands_badge, ands_guard, ands_mcp, ands_dry_run, ands_sbom_gen, ands_audit_review, ands_rosetta, ands_config
-from ands import migrate, audit, sign, ui
+from ands import migrate, audit, sign, ui, ci
 
 def main():
     parser = argparse.ArgumentParser(prog="ands", description="ANDS Toolkit CLI")
@@ -14,6 +14,7 @@ def main():
         "migrate": migrate.main,
         "audit": audit.main,
         "audit-review": ands_audit_review.main,
+        "ci": ci.main,
         "sign": sign.main,
         "ui": ui.main,
         "init": ands_init.main,

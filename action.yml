@@ -9,6 +9,26 @@ inputs:
     description: 'Whether to verify the Ed25519 signature'
     required: false
     default: 'true'
+  policy:
+    description: "Policy framework for compliance check"
+    required: false
+    default: "eu_ai_act"
+  baseline:
+    description: "Path or URL of baseline ANDS report"
+    required: false
+  scan-url:
+    description: "URL to scan live system"
+    required: false
+  ui-url:
+    description: "Optional hosted URL of ands ui"
+    required: false
+
+outputs:
+  risk_delta:
+    description: "Summary of risk and compliance delta"
+  html_report:
+    description: "Path to generated dashboard artifact"
+
 runs:
   using: 'composite'
   steps:
@@ -17,15 +37,23 @@ runs:
       with:
         python-version: '3.12'
     - name: Install dependencies
-      run: pip install -r ${{ github.action_path }}/tools/requirements.txt
+      run: pip install .
       shell: bash
-    - name: Run ANDS Validator
+    - name: Run ANDS CI Audit
       run: |
-        ARGS="${{ inputs.path }}"
-        if [ "${{ inputs.verify-signature }}" = "true" ]; then
-          ARGS="$ARGS --verify-signature"
+        # 1. Validate declaration if path is provided
+        ands validate ${{ inputs.path }}
+
+        # 2. Run scan/audit if scan-url is provided
+        REPORT_PATH="ands_report.json"
+        if [ -n "${{ inputs.scan-url }}" ]; then
+          ands audit --scan ${{ inputs.scan-url }} --policy ${{ inputs.policy }} --out $REPORT_PATH
+        elif [ -f "${{ inputs.path }}" ]; then
+          ands audit --file ${{ inputs.path }} --policy ${{ inputs.policy }} --out $REPORT_PATH
         fi
-        python3 ${{ github.action_path }}/tools/ands_ci.py $ARGS
+
+        # 3. Compare with baseline
+        ands ci --report $REPORT_PATH --baseline "${{ inputs.baseline }}" --ui-url "${{ inputs.ui-url }}" --out-html "ands_dashboard.html"
       shell: bash
 branding:
   icon: 'shield'

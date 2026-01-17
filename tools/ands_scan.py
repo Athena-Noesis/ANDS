@@ -47,6 +47,139 @@ def print_summary(report: ScanReport) -> None:
     line("=")
     out.write("\n")
 
+def run_scan(target: str, args: argparse.Namespace) -> ScanReport:
+    """Core logic of ands-scan refactored for programmatic use."""
+    # We assume 'args' has all the necessary fields or we provide defaults
+    session = get_session(
+        getattr(args, 'retries', config.get("network.retries", 3)),
+        getattr(args, 'proxy', config.get("network.proxy")),
+        getattr(args, 'cert', None),
+        getattr(args, 'key', None),
+        getattr(args, 'cacert', None)
+    )
+
+    timeout = getattr(args, 'timeout', config.get("network.timeout", 10))
+    user_agent = getattr(args, 'user_agent', config.get("network.user_agent", "ands-scan/1.1"))
+    retries = getattr(args, 'retries', config.get("network.retries", 3))
+    jitter = getattr(args, 'jitter', 0.0)
+
+    custom_headers = {}
+    if getattr(args, 'header', None):
+        custom_headers = {h.split(":", 1)[0].strip(): h.split(":", 1)[1].strip() for h in args.header if ":" in h}
+
+    base = normalize_base_url(target)
+    evidence, gaps, recs, probes, snapshot_files = [], [], [], [], {}
+
+    check_tls_integrity(base, evidence)
+
+    # Load and execute plugins
+    plugins = load_plugins()
+    for p in plugins:
+        logger.info(f"Executing plugin: {p.name()}")
+        p.execute_probe(base, session, evidence, gaps)
+
+    r0, err = safe_request(session, "HEAD", base, timeout, user_agent, retries, jitter, custom_headers)
+    if r0 is None: r0, err = safe_request(session, "GET", base, timeout, user_agent, retries, jitter, custom_headers)
+
+    if r0 is None:
+        return ScanReport(base, False, None, None, None, 0.0, [Evidence("probe", f"Unreachable: {err}", 3.0)], ["Target not reachable."], ["Confirm URL/DNS/TLS."], [])
+
+    evidence.append(Evidence("probe", f"Reachable: HTTP {r0.status_code}", 1.0))
+    declared_ands, declared_cert = None, None
+    wk_url = urljoin(base, ".well-known/ands.json")
+    rwk, _ = safe_request(session, "GET", wk_url, timeout, user_agent, retries, jitter, custom_headers)
+    if rwk and rwk.ok:
+        snapshot_files["ands.json"] = rwk.content
+        try:
+            data = rwk.json()
+            migrator = SchemaMigrator()
+            supported_versions = get_supported_versions()
+            declared_ver = migrator.detect_version(data)
+
+            if declared_ver not in supported_versions:
+                gaps.append(f"Unsupported version: {declared_ver}")
+
+            # Auto-normalize in memory for internal processing
+            data = migrator.normalize(data)
+
+            cand = data.get("declared_ands") or data.get("ands")
+            declared_cert = data.get("certification_level")
+            if isinstance(cand, str):
+                declared_ands = cand
+                evidence.append(Evidence("ands_well_known", f"Declared ANDS: {cand}", 3.0))
+            if declared_cert: evidence.append(Evidence("ands_well_known", f"Declared certification: {declared_cert}", 1.2))
+
+            # PRIME DIRECTIVE: Evidence Harvesting
+            harvest_targets = {
+                "attestation": data.get("attestation_urls", []),
+                "sbom": data.get("sbom_urls", []),
+                "policy": [data.get("contact")] if data.get("contact", "").startswith("http") else []
+            }
+            for category, urls in harvest_targets.items():
+                for url in urls:
+                    logger.info(f"Harvesting {category}: {url}")
+                    hresp, herr = safe_request(session, "GET", url, timeout, user_agent, retries, jitter, custom_headers)
+                    if hresp and hresp.ok:
+                        snapshot_files[f"harvest_{category}_{Path(url).name}"] = hresp.content
+                        evidence.append(Evidence("harvest", f"Harvested {category} artifact: {url}", 0.5))
+                    else: gaps.append(f"Failed to harvest {category} from {url}: {herr}")
+
+            if "signed" in data:
+                ok, msg = verify_declaration_signature(data)
+                evidence.append(Evidence("ands_well_known", msg, 2.0)) if ok else gaps.append(msg)
+
+        except: gaps.append("Failed to parse ands.json")
+    else:
+        gaps.append("No ands.json found.")
+        recs.append("Publish /.well-known/ands.json")
+
+    default_openapi = config.get("scanner.openapi_paths", ["openapi.json", "openapi.yaml", "openapi.yml", "swagger.json"])
+    oa_urls = [getattr(args, 'openapi_url', None)] if getattr(args, 'openapi_url', None) else [urljoin(base, p) for p in default_openapi]
+    openapi, hints = None, []
+    for oa_url in oa_urls:
+        if not oa_url: continue
+        roa, _ = safe_request(session, "GET", oa_url, timeout, user_agent, retries, jitter, custom_headers)
+        if roa and roa.ok:
+            snapshot_files[Path(oa_url).name] = roa.content
+            try:
+                openapi = yaml.safe_load(roa.text) if oa_url.endswith((".yaml", ".yml")) else roa.json()
+                if isinstance(openapi, dict):
+                    hints = openapi_hints(openapi)
+                    evidence.append(Evidence("openapi", f"Hints from {oa_url}: {', '.join(hints) or 'none'}", 1.2))
+                    break
+            except: pass
+    if not openapi: gaps.append("No openapi spec found.")
+
+    if getattr(args, 'verify', False):
+        targets = pick_probe_paths(openapi)
+        budget = max(0, getattr(args, 'max_probes', 15))
+        for cat in ["safe", "dangerous"]:
+            for path in targets[cat]:
+                if budget <= 0: break
+                budget -= 1
+                full = urljoin(base, path.lstrip("/"))
+                resp, perr = safe_request(session, "GET", full, timeout, user_agent, retries, jitter, custom_headers)
+                pr = ProbeResult(full, "GET", (resp.status_code if resp else None), (dict(resp.headers) if resp else {}), (perr or ""))
+                probes.append(pr)
+                analyze_probe_status(pr, cat, evidence, gaps, recs)
+        evidence.append(Evidence("probe", f"Probes executed: {len(probes)}", 0.8))
+
+    inferred, conf, reasoning = infer_ands(hints, evidence, gaps)
+
+    if declared_ands:
+        conf = min(0.95, conf + 0.25)
+        if declared_ands != inferred: gaps.append(f"Discrepancy: Declared {declared_ands} vs Inferred {inferred}")
+    if not declared_cert: recs.append("Require certification_level (R>=4)")
+
+    custom_policy = None
+    if getattr(args, 'policy', None) and Path(args.policy).exists():
+        with open(args.policy, "r") as f:
+            custom_policy = yaml.safe_load(f)
+
+    regs = map_to_regulations(inferred, custom_policy)
+    return ScanReport(base, True, declared_ands, declared_cert, inferred, round(conf, 2), evidence, gaps, sorted(set(recs)), probes, regs, reasoning=reasoning)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("target", help="Base URL or hostname")

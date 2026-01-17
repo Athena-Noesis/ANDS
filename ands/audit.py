@@ -5,9 +5,8 @@ import sys
 from typing import Any, Dict, List, Optional
 from dataclasses import asdict
 
-from .models import ScanReport, ComplianceReport
+from .models import ScanReport, ComplianceReport, Evidence, ProbeResult, ReasoningStep, ComplianceArticle
 from .policy_engine import PolicyEngine
-from .scanner import main as scanner_main
 from .utils import logger
 
 def main():
@@ -23,28 +22,9 @@ def main():
     report = None
 
     if args.scan:
-        # Perform fresh scan
-        # We need to capture the output of scanner_main or refactor it to return the report object
-        # For now, let's assume we can run it and it writes to a temp file or we can call it.
-        # Actually, it's better to refactor scanner.py's main to return the report.
-        # But since I can't easily refactor it right now without risk, I'll use a temp file.
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
-            tmp_path = tmp.name
-
-        # Patch sys.argv to call scanner
-        old_argv = sys.argv
-        sys.argv = ["ands scan", args.scan, "--out", tmp_path] + extra
-        try:
-            scanner_main()
-            with open(tmp_path, 'r') as f:
-                data = json.load(f)
-                # Ensure it's a ScanReport-like dict
-                report = ScanReport(**{k: v for k, v in data.items() if k in ScanReport.__dataclass_fields__})
-        finally:
-            sys.argv = old_argv
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+        # Perform fresh scan by calling the tool logic directly
+        from tools.ands_scan import run_scan
+        report = run_scan(args.scan, args)
 
     elif args.file:
         with open(args.file, 'r') as f:
@@ -53,6 +33,21 @@ def main():
             if "target" in data:
                 # Likely a scan report
                 report = ScanReport(**{k: v for k, v in data.items() if k in ScanReport.__dataclass_fields__})
+
+                # Reconstruct nested dataclasses
+                report.evidence = [Evidence(**e) for e in data.get("evidence", [])]
+                report.probes = [ProbeResult(**p) for p in data.get("probes", [])]
+                if data.get("reasoning"):
+                    report.reasoning = [ReasoningStep(**r) for r in data.get("reasoning", [])]
+                if data.get("compliance"):
+                    c = data["compliance"]
+                    report.compliance = ComplianceReport(
+                        framework=c.get("framework", "unknown"),
+                        version=c.get("version", "1.0"),
+                        overall_score=c.get("overall_score", 0.0),
+                        articles=[ComplianceArticle(**a) for a in c.get("articles", [])],
+                        auditor_overrides=c.get("auditor_overrides")
+                    )
             else:
                 # Likely a declaration, wrap it in a minimal ScanReport
                 report = ScanReport(
