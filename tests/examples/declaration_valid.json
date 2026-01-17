@@ -1,0 +1,22 @@
+{
+  "system_id": "ands.mock",
+  "ands_version": "1.0",
+  "declared_ands": "2.1.1.2.1",
+  "certification_level": "SELF",
+  "capabilities": {
+    "tool_use": false,
+    "memory_persistence": false,
+    "autonomous_execution": false,
+    "state_mutation": false,
+    "code_execution": false
+  },
+  "attestation_urls": [
+    "https://example.com/attestation"
+  ],
+  "contact": "contact@example.com",
+  "signed": {
+    "alg": "ed25519",
+    "sig": "hx+Xu6Ozy3kVMAi/yppJe/DGatiZyBnh2KBAm/DQcaD4LQCmZo7PdHrLbhJAJXS+xJc+2HNLsdevYjZ8eiJVCg==",
+    "pubkey": "71PQ80bIEkpgUlwk5oAN2UcjguGZcoc2n0Cx3U1bgnw="
+  }
+}
