@@ -24,6 +24,7 @@ dependencies = [
 ]
 
 [project.scripts]
+ands = "ands.cli:main"
 ands-scan = "tools.ands_scan:main"
 ands-validate = "tools.validate_declaration:main"
 ands-init = "tools.ands_init:main"

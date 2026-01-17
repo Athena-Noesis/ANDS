@@ -1,48 +1,70 @@
-# ANDS Strategic Roadmap
+# ANDS Master Roadmap
 
-This document outlines the planned improvements and strategic vision for the Athena Noesis Decimal System (ANDS).
+This document serves as the definitive development roadmap for the **Athena Noesis Decimal System (ANDS)**, structured across logical development tiers.
 
-## 1. Core Framework Improvements
-- **Standardized Packaging**: Add `pyproject.toml` and `setup.py` to allow `pip install -e .` for portability.
-- **Unified CLI Entry Point**: Consolidate tools under a single `ands` command (e.g., `ands scan`, `ands init`).
-- **Standardized Schema Registry**: Implement a robust, centralized schema registry with formal URN/URL systems for schema resolution.
-- **Structured Logging**: Move from print statements to a structured logging framework (e.g., `logging` or `structlog`).
-- **Schema Versioning Logic**: Implement explicit version-handling logic for backward compatibility (e.g., ANDS 1.0 to 2.0).
-- **The "Sustainability" Axis**: Add a 6th axis for Environment (E) or Resource Intensity to the standard.
+---
 
-## 2. Tool & Capability Enhancements
-- **Automated Dependency Auditing**: Deeply integrate recursive scanning of SBOMs for upstream ANDS declarations.
-- **Enhanced Verification Probes**: Add AI-specific fingerprinting (vLLM, Ollama) and provider-specific health checks.
-- **Input Robustness in Wizard**: Add CLI flags and YAML/JSON config support to `ands_init.py` for automated pipelines.
-- **Continuous Monitoring (The Oracle)**: Support complex triggers and drift alerting (inferred vs. declared risk).
-- **Signature Rotation and Lifecycle**: Implement key rotation and revocation support for long-lived deployments.
-- **mTLS and Private PKI**: Streamline integration for enterprise private networks.
+## 🧱 I. Foundation Tier — Core Professionalization (v1.0 → v1.5)
+**Goal:** Make ANDS a robust, installable, production-ready Python toolkit.
 
-## 3. Integration & Interface
-- **Advanced MCP (Model Context Protocol)**: Enable AI agents to perform high-assurance programmatic audits.
-- **Evidence Persistence**: Enhance snapshotting and archiving of harvested evidence in `.andsz` bundles.
-- **GUI / Web Interface**: Build an interactive, user-friendly interface for the Registry and Wizard in `ands_portal.py`.
-- **Live Badge API**: A dynamic API linked to the Oracle registry for real-time compliance status display.
-- **Local "Dry Run" Scanner**: A tool for developers to execute within their own network before they publish, suggesting the most accurate ANDS Cognition and Authority scores.
-- **ANDS-to-SBOM Mapping**: Deeply integrate with SBOM standards (like CycloneDX). An ANDS declaration could be treated as a "Compliance SBOM" that sits alongside the "Software SBOM."
-- **Federated Registry (The Oracle Network)**: Allow multiple instances of `ands_registry.py` to sync or "peer" for a global view of AI risk.
-- **"Proof of Compute" Integration**: Incorporate Hardware-level Remote Attestation (Intel SGX, NVIDIA H100) into ANDS signatures for physical assurance.
-- **ANDS for Data**: Apply C.A.M.G.R axes to Training and RAG Datasets to measure "Data Governance" risk.
-- **"Economic Risk" Axis (Insurance Underwriting)**: Calculate Expected Loss (EL) based on live ANDS scores for automated insurance premium adjustments.
-- **The "Red-Team" Scanner**: Automated stress-testing tool that attempts to trigger "Capability Drift" (e.g. executing code when declared as NO-EXEC).
-- **Cascading Risk Analysis**: Automated mapping of AI dependencies via SBOMs/Attestations to identify upstream "Risk Hiding" (e.g. R=1 relying on R=5).
-- **Emergent ANDS (Swarm Scoring)**: Scoring Multi-Agent Systems. Calculate "Composite ANDS" for swarms based on topology and shared axes.
-- **Semantic Alignment Probes**: Move beyond network probes into behavioral pressure tests to verify the AI's declared Governance axes.
-- **The Rosetta Stone (Harmonization)**: Universal mapping between ANDS and global standards (ISO, NIST, EU AI Act) for seamless compliance.
-- **Governance Discovery Protocol (ANDS-P)**: Implement a ZeroConf/mDNS-based discovery protocol for AI systems to automatically announce their risk profiles.
-- **Active Adaptive Guardians**: Enhance `ands_guard.py` to negotiate safe constraints by injecting real-time axis-downshifting system prompts.
-- **ANDS CI/CD Health Dashboard**: Markdown-based summary generator for Pull Requests showing ANDS axis deltas (e.g. "This PR increases Authority from 2 to 3").
-- **Multi-Stakeholder Notarization UI**: Web-based wizard for multiple auditors to review evidence bundles and append cryptographic signatures.
+- [x] **Formal Packaging**: Implemented `pyproject.toml` for `pip install .` support.
+- [x] **Unified CLI**: Integrated all tools under a single `ands` command.
+- [x] **Structured Logging**: Moved to standard `logging` framework with `setup_logging`.
+- [x] **Expanded Unit Tests**: Core logic and schema validation covered by `pytest`.
+- [ ] **Configuration Management**: Central `ands.config.yaml` for global settings (Planned).
+- [ ] **Schema Versioning Logic**: Formal migration paths between standard versions (Planned).
 
-## 4. Community & Strategic Vision
-- **Community-Driven Probe Library**: Open-source repository for non-invasive AI vulnerability probes.
-- **Transparency Logs**: Integration with immutable logs for high-assurance (Risk 4+) system profiles.
-- **Regulatory Translation Engine**: Deepen the mapping of ANDS codes to specific Article requirements in the EU AI Act and NIST AI RMF.
+---
+
+## 🏛️ II. Enterprise Tier — Governance, Risk & Auditing (v2.0 → v2.5)
+**Goal:** Make ANDS enterprise-grade for insurers, governments, and regulated vendors.
+
+- [x] **Cascading Risk Analysis**: Detected via recursive dependency scanning.
+- [x] **Capability Drift Alerting**: Real-time Slack/Webhook notifications from The Oracle.
+- [x] **Local LLM Probes**: Native support for Ollama/vLLM via plugin system.
+- [x] **Standardized Schema Registry**: Reliable local and remote axis resolution.
+- [ ] **Regulatory Mapping Engine v2**: Granular per-Article checklist mode (Planned).
+- [ ] **Multi-Signature Notarization UI**: Web-based interface for collaborative signing (Planned).
+- [ ] **CI/CD Dashboard**: Enhanced PR summaries for risk deltas (Planned).
+
+---
+
+## ⚙️ III. Strategic Tier — Advanced Risk Intelligence (v3.0 → v3.5)
+**Goal:** Turn ANDS into an autonomous compliance and risk forecasting framework.
+
+- [x] **Scanner Plugin Architecture**: Dynamic probe loading from `ands/plugins/`.
+- [x] **"What-If" Regulatory Simulator**: Comparison against draft/custom legislation.
+- [x] **Auditor Override Logic**: Support for human-in-the-loop axis adjustments.
+- [x] **Reasoning Trace**: Logic explainability for inferred scores (Chain-of-Thought).
+- [x] **Auditor Workflow Tool**: Forensic review and re-signing of audit bundles.
+- [x] **Kubernetes Sidecar**: Pre-configured `ands_guard` for service meshes.
+- [ ] **Federated Registries**: Multi-region Oracle syncing for sovereign networks (Planned).
+
+---
+
+## 🌐 IV. Frontier Tier — Hardware, Ecosystem, and Agentic Intelligence (v4.0 → v4.5)
+**Goal:** Expand ANDS into the physical and economic layers of AI trust.
+
+- [x] **Self-Correcting Guardians**: Adaptive risk negotiation at runtime.
+- [x] **Emergent Swarm Risk Model**: Composite scoring for multi-agent organizations.
+- [x] **Recursive Dependency Scoring**: Systemic risk computation across sub-agents.
+- [ ] **Proof-of-Compute Integration**: Hardware-level Remote Attestation (Planned).
+- [ ] **ANDS for Data ("D" Axis)**: Scoring for Training and RAG Datasets (Planned).
+- [ ] **Economic Risk Engine**: Expected Loss (EL) modeling for insurance (Planned).
+- [ ] **Red-Team Scanner**: Automated stress-testing for capability drift (Planned).
+
+---
+
+## 🧠 V. Experimental Tier — Behavioral Intelligence & Universal Harmonization (v5.0+)
+**Goal:** Make ANDS the “Rosetta Stone” of AI safety and compliance.
+
+- [x] **Semantic Alignment Probes**: Behavioral pressure testing for deception detection.
+- [x] **Regulatory Rosetta Stone**: Universal translation to ISO, NIST, and EU standards.
+- [x] **Sustainability Axis (S)**: Sixth dimension for environmental impact.
+- [x] **Live Badge API**: Dynamic status indicators linked to Oracle registry.
+- [x] **Auto-Scorer & Dry-Run**: Developer assistance for accurate scoring.
+- [x] **ANDS-to-SBOM Integration**: CycloneDX-compliant metadata generation.
+- [ ] **Transparency Ledger**: Immutable public log for declaration updates (Planned).
 
 ---
 **Maintained by:** Athena Noesis Compliance & Standards Team
