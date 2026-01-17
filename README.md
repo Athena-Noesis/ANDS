@@ -9,6 +9,13 @@ It is designed for procurement, compliance, insurance underwriting, and security
 > ANDS is not a benchmark and not a safety guarantee.
 > It is a structured disclosure + verification surface.
 
+## Toolkit Installation
+
+```bash
+pip install .
+ands config init  # Initialize default configuration
+```
+
 ## Quick Start
 
 ### 1) Publish a declaration (vendors)

@@ -1,0 +1,44 @@
+# ands.config.yaml — baseline configuration
+
+general:
+  schema_version: "1.2"
+  language: "en"
+  timezone: "UTC"
+
+network:
+  timeout: 10
+  retries: 3
+  backoff_factor: 1.5
+  user_agent: "ANDS-Toolkit/1.2"
+  proxy: null
+
+security:
+  verify_tls: true
+  ca_bundle: null
+  mtls_cert: null
+  mtls_key: null
+
+scanner:
+  live_scan_enabled: false
+  max_response_size: 5242880
+  openapi_paths:
+    - openapi.json
+    - api/v1/openapi.json
+    - swagger.json
+  signature_policy: "all"
+  quorum: 2
+
+logging:
+  level: "INFO"
+  format: "json"
+  file: null
+
+audit:
+  evidence_dir: "./evidence"
+  bundle_signing: true
+  keep_history: true
+
+paths:
+  schema_dir: "./schemas"
+  policy_dir: "./policies"
+  reports_dir: "./reports"

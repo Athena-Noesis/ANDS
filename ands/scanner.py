@@ -158,28 +158,6 @@ def analyze_probe_status(pr: ProbeResult, category: str, evidence: List[Evidence
         elif pr.status in (401, 403): evidence.append(Evidence("probe", f"Dangerous endpoint protected ({pr.status}): {pr.url}", 1.5))
     elif pr.status == 200: evidence.append(Evidence("probe", f"Safe endpoint reachable: {pr.url}", 1.2))
 
-def verify_declaration_signature(doc: Dict[str, Any]) -> Tuple[bool, str]:
-    signed = doc.get("signed")
-    if not isinstance(signed, dict):
-        return False, "Missing 'signed' block."
-    alg = signed.get("alg")
-    sig_b64 = signed.get("sig")
-    pub_b64 = signed.get("pubkey")
-    if alg != "ed25519":
-        return False, f"Unsupported algorithm: {alg}"
-    if not sig_b64 or not pub_b64:
-        return False, "Missing sig or pubkey."
-    try:
-        sig = base64.b64decode(sig_b64)
-        pub = base64.b64decode(pub_b64)
-        d = dict(doc)
-        d.pop("signed", None)
-        msg = jcs.canonicalize(d)
-        pk = Ed25519PublicKey.from_public_bytes(pub)
-        pk.verify(sig, msg)
-        return True, "Signature VALID."
-    except Exception as e:
-        return False, f"Signature INVALID: {e}"
 
 def create_bundle(out_path: str, report: ScanReport, evidence_files: Dict[str, bytes], sign_keys: List[str] = None):
     """Create a multi-sig verifiable audit bundle."""

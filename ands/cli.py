@@ -1,6 +1,6 @@
 import argparse
 import sys
-from tools import ands_scan, validate_declaration, ands_init, ands_badge, ands_guard, ands_mcp, ands_dry_run, ands_sbom_gen, ands_audit_review, ands_rosetta
+from tools import ands_scan, validate_declaration, ands_init, ands_badge, ands_guard, ands_mcp, ands_dry_run, ands_sbom_gen, ands_audit_review, ands_rosetta, ands_config
 
 def main():
     parser = argparse.ArgumentParser(prog="ands", description="ANDS Toolkit CLI")
@@ -17,7 +17,8 @@ def main():
         "dry-run": ands_dry_run.main,
         "sbom-gen": ands_sbom_gen.main,
         "audit": ands_audit_review.main,
-        "rosetta": ands_rosetta.main
+        "rosetta": ands_rosetta.main,
+        "config": ands_config.main
     }
 
     # Simplified dispatch: pass remaining args to the sub-command
